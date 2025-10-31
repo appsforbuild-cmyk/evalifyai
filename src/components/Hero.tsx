@@ -8,7 +8,7 @@ const Hero = () => {
   };
 
   return (
-    <section className="relative gradient-hero min-h-screen flex items-center justify-center px-4 py-20">
+    <section className="relative gradient-hero min-h-screen flex items-center justify-center px-4 py-20 pt-32">
       <div className="container mx-auto max-w-7xl">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           {/* Left Column - Text Content */}
