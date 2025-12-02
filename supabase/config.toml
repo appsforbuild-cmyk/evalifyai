@@ -1,1 +1,7 @@
 project_id = "znsomykalllscyziasea"
+
+[functions.process-session]
+verify_jwt = false
+
+[functions.create-voice-session]
+verify_jwt = false
