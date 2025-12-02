@@ -1,24 +1,38 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Mic, Square, Loader2, Upload } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import { Mic, Square, Pause, Play, Upload, Loader2, FileAudio, CheckCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import DashboardLayout from '@/components/DashboardLayout';
+import { useAudioRecorder } from '@/hooks/useAudioRecorder';
+
+type ProcessingStep = 'idle' | 'uploading' | 'transcribing' | 'generating' | 'complete';
 
 const VoiceSession = () => {
   const { sessionId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
   const [session, setSession] = useState<any>(null);
-  const [isRecording, setIsRecording] = useState(false);
-  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
-  const [audioUrl, setAudioUrl] = useState<string | null>(null);
-  const [processing, setProcessing] = useState(false);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [processingStep, setProcessingStep] = useState<ProcessingStep>('idle');
+  const [transcript, setTranscript] = useState<string>('');
+
+  const {
+    state: recordingState,
+    audioBlob,
+    audioUrl,
+    duration,
+    audioLevel,
+    startRecording,
+    pauseRecording,
+    resumeRecording,
+    stopRecording,
+    resetRecording
+  } = useAudioRecorder();
 
   useEffect(() => {
     fetchSession();
@@ -36,64 +50,77 @@ const VoiceSession = () => {
       navigate('/dashboard');
     } else {
       setSession(data);
-      if (data.audio_url) {
-        setAudioUrl(data.audio_url);
+      if (data.transcript) {
+        setTranscript(data.transcript);
+      }
+      if (data.status === 'draft') {
+        setProcessingStep('complete');
       }
     }
   };
 
-  const startRecording = async () => {
+  const formatDuration = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const handleStartRecording = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = mediaRecorder;
-      chunksRef.current = [];
-
-      mediaRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0) {
-          chunksRef.current.push(e.data);
-        }
-      };
-
-      mediaRecorder.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
-        setAudioBlob(blob);
-        setAudioUrl(URL.createObjectURL(blob));
-        stream.getTracks().forEach(track => track.stop());
-      };
-
-      mediaRecorder.start();
-      setIsRecording(true);
-
+      await startRecording();
       await supabase
         .from('voice_sessions')
         .update({ status: 'recording' })
         .eq('id', sessionId);
-
       toast.success('Recording started');
     } catch (err) {
       toast.error('Could not access microphone');
     }
   };
 
-  const stopRecording = () => {
-    if (mediaRecorderRef.current) {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
-      toast.success('Recording stopped');
-    }
+  const handlePauseRecording = () => {
+    pauseRecording();
+    toast.info('Recording paused');
+  };
+
+  const handleResumeRecording = () => {
+    resumeRecording();
+    toast.info('Recording resumed');
+  };
+
+  const handleStopRecording = () => {
+    stopRecording();
+    toast.success('Recording stopped');
   };
 
   const uploadAndProcess = async () => {
-    if (!audioBlob || !user) return;
+    if (!audioBlob || !user || !sessionId) return;
 
-    setProcessing(true);
+    setProcessingStep('uploading');
+    
     try {
+      // Simulate upload progress
+      const progressInterval = setInterval(() => {
+        setUploadProgress(prev => {
+          if (prev >= 90) {
+            clearInterval(progressInterval);
+            return 90;
+          }
+          return prev + 10;
+        });
+      }, 200);
+
       // Upload to Supabase Storage
       const fileName = `${user.id}/${sessionId}-${Date.now()}.webm`;
       const { error: uploadError } = await supabase.storage
         .from('voice-recordings')
-        .upload(fileName, audioBlob);
+        .upload(fileName, audioBlob, {
+          contentType: 'audio/webm',
+          upsert: true
+        });
+
+      clearInterval(progressInterval);
+      setUploadProgress(100);
 
       if (uploadError) throw uploadError;
 
@@ -107,7 +134,9 @@ const VoiceSession = () => {
         .update({ audio_url: publicUrl, status: 'processing' })
         .eq('id', sessionId);
 
-      toast.success('Audio uploaded, processing...');
+      toast.success('Audio uploaded successfully');
+      setProcessingStep('transcribing');
+      setTranscript('Transcribing audio...');
 
       // Convert blob to base64 for processing
       const reader = new FileReader();
@@ -121,17 +150,30 @@ const VoiceSession = () => {
         });
 
         if (error) {
+          console.error('Processing error:', error);
           toast.error('Processing failed');
-          setProcessing(false);
+          setProcessingStep('idle');
           return;
         }
 
+        setProcessingStep('generating');
+        
+        // Show transcript
+        if (data?.transcript) {
+          setTranscript(data.transcript);
+        }
+
+        // Small delay to show generating step
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
+        setProcessingStep('complete');
         toast.success('Processing complete!');
-        navigate(`/feedback/${sessionId}`);
       };
     } catch (err) {
+      console.error('Upload error:', err);
       toast.error('Upload failed');
-      setProcessing(false);
+      setProcessingStep('idle');
+      setUploadProgress(0);
     }
   };
 
@@ -139,7 +181,7 @@ const VoiceSession = () => {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-64">
-          <Loader2 className="w-8 h-8 animate-spin" />
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
         </div>
       </DashboardLayout>
     );
@@ -147,80 +189,190 @@ const VoiceSession = () => {
 
   return (
     <DashboardLayout>
-      <div className="max-w-2xl mx-auto space-y-6">
+      <div className="max-w-3xl mx-auto space-y-6">
+        {/* Header */}
         <div>
-          <h1 className="text-3xl font-bold text-primary">{session.title}</h1>
-          <p className="text-muted-foreground">{session.description}</p>
+          <h1 className="text-3xl font-bold text-foreground">{session.title}</h1>
+          <p className="text-muted-foreground mt-1">{session.description}</p>
         </div>
 
-        <Card>
+        {/* Recording Card */}
+        <Card className="border-border">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Mic className="w-5 h-5" /> Voice Recording
+              <Mic className="w-5 h-5 text-primary" /> Voice Recording
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-8">
+            {/* Recording Visualization */}
             <div className="flex flex-col items-center gap-6">
-              {/* Recording visualization */}
-              <div className={`w-32 h-32 rounded-full flex items-center justify-center transition-all ${
-                isRecording 
-                  ? 'bg-red-100 animate-pulse border-4 border-red-500' 
-                  : 'bg-muted border-4 border-border'
-              }`}>
-                <Mic className={`w-12 h-12 ${isRecording ? 'text-red-500' : 'text-muted-foreground'}`} />
+              <div className="relative">
+                {/* Audio level ring */}
+                <div 
+                  className={`absolute inset-0 rounded-full transition-all duration-100 ${
+                    recordingState === 'recording' ? 'bg-destructive/20' : 'bg-transparent'
+                  }`}
+                  style={{
+                    transform: `scale(${1 + audioLevel * 0.5})`,
+                    opacity: audioLevel
+                  }}
+                />
+                
+                {/* Main circle */}
+                <div className={`relative w-36 h-36 rounded-full flex items-center justify-center transition-all ${
+                  recordingState === 'recording' 
+                    ? 'bg-destructive/10 border-4 border-destructive animate-pulse' 
+                    : recordingState === 'paused'
+                    ? 'bg-warning/10 border-4 border-warning'
+                    : audioUrl
+                    ? 'bg-primary/10 border-4 border-primary'
+                    : 'bg-muted border-4 border-border'
+                }`}>
+                  {recordingState === 'recording' ? (
+                    <div className="flex flex-col items-center">
+                      <Mic className="w-10 h-10 text-destructive" />
+                      <span className="text-sm font-mono text-destructive mt-1">
+                        {formatDuration(duration)}
+                      </span>
+                    </div>
+                  ) : recordingState === 'paused' ? (
+                    <div className="flex flex-col items-center">
+                      <Pause className="w-10 h-10 text-warning" />
+                      <span className="text-sm font-mono text-warning mt-1">
+                        {formatDuration(duration)}
+                      </span>
+                    </div>
+                  ) : audioUrl ? (
+                    <FileAudio className="w-10 h-10 text-primary" />
+                  ) : (
+                    <Mic className="w-10 h-10 text-muted-foreground" />
+                  )}
+                </div>
               </div>
 
+              {/* Duration display when stopped */}
+              {audioUrl && recordingState === 'stopped' && (
+                <p className="text-sm text-muted-foreground">
+                  Recording duration: {formatDuration(duration)}
+                </p>
+              )}
+
               {/* Controls */}
-              <div className="flex gap-4">
-                {!isRecording && !audioUrl && (
-                  <Button onClick={startRecording} size="lg" className="flex items-center gap-2">
+              <div className="flex gap-3">
+                {recordingState === 'idle' && !audioUrl && (
+                  <Button onClick={handleStartRecording} size="lg" className="gap-2">
                     <Mic className="w-5 h-5" /> Start Recording
                   </Button>
                 )}
                 
-                {isRecording && (
-                  <Button onClick={stopRecording} variant="destructive" size="lg" className="flex items-center gap-2">
-                    <Square className="w-5 h-5" /> Stop Recording
-                  </Button>
+                {recordingState === 'recording' && (
+                  <>
+                    <Button onClick={handlePauseRecording} variant="outline" size="lg" className="gap-2">
+                      <Pause className="w-5 h-5" /> Pause
+                    </Button>
+                    <Button onClick={handleStopRecording} variant="destructive" size="lg" className="gap-2">
+                      <Square className="w-5 h-5" /> Stop
+                    </Button>
+                  </>
+                )}
+
+                {recordingState === 'paused' && (
+                  <>
+                    <Button onClick={handleResumeRecording} variant="outline" size="lg" className="gap-2">
+                      <Play className="w-5 h-5" /> Resume
+                    </Button>
+                    <Button onClick={handleStopRecording} variant="destructive" size="lg" className="gap-2">
+                      <Square className="w-5 h-5" /> Stop
+                    </Button>
+                  </>
                 )}
               </div>
+            </div>
 
-              {/* Audio preview */}
-              {audioUrl && !isRecording && (
-                <div className="w-full space-y-4">
-                  <audio controls src={audioUrl} className="w-full" />
-                  
-                  <div className="flex gap-4 justify-center">
-                    <Button variant="outline" onClick={() => {
-                      setAudioBlob(null);
-                      setAudioUrl(null);
-                    }}>
-                      Re-record
-                    </Button>
-                    <Button 
-                      onClick={uploadAndProcess} 
-                      disabled={processing}
-                      className="flex items-center gap-2"
-                    >
-                      {processing ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin" /> Processing...
-                        </>
-                      ) : (
-                        <>
-                          <Upload className="w-4 h-4" /> Upload & Process
-                        </>
-                      )}
-                    </Button>
-                  </div>
+            {/* Audio Preview */}
+            {audioUrl && recordingState === 'stopped' && processingStep === 'idle' && (
+              <div className="space-y-4 pt-4 border-t border-border">
+                <audio controls src={audioUrl} className="w-full" />
+                
+                <div className="flex gap-3 justify-center">
+                  <Button variant="outline" onClick={resetRecording}>
+                    Re-record
+                  </Button>
+                  <Button onClick={uploadAndProcess} className="gap-2">
+                    <Upload className="w-4 h-4" /> Upload & Process
+                  </Button>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
 
-            <div className="text-sm text-muted-foreground text-center">
-              <p>Speak naturally about the employee's performance.</p>
-              <p>EvalifyAI will transcribe and generate structured feedback.</p>
-            </div>
+            {/* Processing States */}
+            {processingStep !== 'idle' && processingStep !== 'complete' && (
+              <div className="space-y-4 pt-4 border-t border-border">
+                {/* Upload Progress */}
+                {processingStep === 'uploading' && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Uploading audio...</span>
+                      <span className="font-mono">{uploadProgress}%</span>
+                    </div>
+                    <Progress value={uploadProgress} className="h-2" />
+                  </div>
+                )}
+
+                {/* Transcription */}
+                {processingStep === 'transcribing' && (
+                  <div className="flex items-center gap-3 text-muted-foreground">
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>Transcribing audio...</span>
+                  </div>
+                )}
+
+                {/* Generating Feedback */}
+                {processingStep === 'generating' && (
+                  <div className="flex items-center gap-3 text-muted-foreground">
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>Generating AI feedback...</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Completion State */}
+            {processingStep === 'complete' && (
+              <div className="space-y-4 pt-4 border-t border-border">
+                <div className="flex items-center gap-3 text-primary">
+                  <CheckCircle className="w-5 h-5" />
+                  <span className="font-medium">Processing complete!</span>
+                </div>
+                
+                <Button 
+                  onClick={() => navigate(`/feedback/${sessionId}`)} 
+                  className="w-full"
+                >
+                  View & Edit Feedback Draft
+                </Button>
+              </div>
+            )}
+
+            {/* Transcript Preview */}
+            {transcript && (
+              <div className="space-y-2 pt-4 border-t border-border">
+                <h4 className="font-medium text-foreground">Transcript Preview</h4>
+                <div className="bg-muted/50 rounded-lg p-4 max-h-48 overflow-y-auto">
+                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                    {transcript}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Instructions */}
+            {processingStep === 'idle' && !audioUrl && (
+              <div className="text-sm text-muted-foreground text-center space-y-1">
+                <p>Speak naturally about the employee's performance.</p>
+                <p>EvalifyAI will transcribe and generate structured feedback.</p>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
