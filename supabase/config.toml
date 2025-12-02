@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.create-voice-session]
 verify_jwt = false
+
+[functions.send-feedback-notification]
+verify_jwt = false

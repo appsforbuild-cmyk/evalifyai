@@ -14,6 +14,59 @@ export type Database = {
   }
   public: {
     Tables: {
+      feedback_audit: {
+        Row: {
+          action: string
+          can_undo_until: string | null
+          feedback_id: string
+          id: string
+          is_undone: boolean | null
+          metadata: Json | null
+          new_content: string | null
+          new_tone: string | null
+          performed_at: string
+          performed_by: string
+          previous_content: string | null
+          previous_tone: string | null
+        }
+        Insert: {
+          action: string
+          can_undo_until?: string | null
+          feedback_id: string
+          id?: string
+          is_undone?: boolean | null
+          metadata?: Json | null
+          new_content?: string | null
+          new_tone?: string | null
+          performed_at?: string
+          performed_by: string
+          previous_content?: string | null
+          previous_tone?: string | null
+        }
+        Update: {
+          action?: string
+          can_undo_until?: string | null
+          feedback_id?: string
+          id?: string
+          is_undone?: boolean | null
+          metadata?: Json | null
+          new_content?: string | null
+          new_tone?: string | null
+          performed_at?: string
+          performed_by?: string
+          previous_content?: string | null
+          previous_tone?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feedback_audit_feedback_id_fkey"
+            columns: ["feedback_id"]
+            isOneToOne: false
+            referencedRelation: "feedback_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       feedback_entries: {
         Row: {
           ai_draft: string | null
