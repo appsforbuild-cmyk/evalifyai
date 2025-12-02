@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import logo from "@/assets/evalifyai-logo.png";
 
@@ -43,14 +44,21 @@ const Header = () => {
             </button>
           </nav>
 
-          {/* CTA Button */}
-          <Button 
-            onClick={() => scrollToSection('waitlist')}
-            className="bg-accent hover:bg-accent/90 text-white font-semibold px-6"
-            size="lg"
-          >
-            Join Waitlist
-          </Button>
+          {/* CTA Buttons */}
+          <div className="flex items-center gap-3">
+            <Link to="/auth">
+              <Button variant="ghost" className="font-medium">
+                Sign In
+              </Button>
+            </Link>
+            <Button 
+              onClick={() => scrollToSection('waitlist')}
+              className="bg-accent hover:bg-accent/90 text-white font-semibold px-6"
+              size="lg"
+            >
+              Join Waitlist
+            </Button>
+          </div>
         </div>
       </div>
     </header>
