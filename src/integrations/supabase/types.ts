@@ -14,16 +14,158 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      feedback_entries: {
+        Row: {
+          ai_draft: string | null
+          competency_tags: string[] | null
+          created_at: string | null
+          final_feedback: string | null
+          id: string
+          is_published: boolean | null
+          published_at: string | null
+          session_id: string
+          tone_analysis: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          ai_draft?: string | null
+          competency_tags?: string[] | null
+          created_at?: string | null
+          final_feedback?: string | null
+          id?: string
+          is_published?: boolean | null
+          published_at?: string | null
+          session_id: string
+          tone_analysis?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          ai_draft?: string | null
+          competency_tags?: string[] | null
+          created_at?: string | null
+          final_feedback?: string | null
+          id?: string
+          is_published?: boolean | null
+          published_at?: string | null
+          session_id?: string
+          tone_analysis?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feedback_entries_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "voice_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string | null
+          email: string | null
+          full_name: string | null
+          id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      voice_sessions: {
+        Row: {
+          audio_url: string | null
+          created_at: string | null
+          description: string | null
+          employee_id: string
+          id: string
+          manager_id: string
+          status: string | null
+          title: string
+          transcript: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          audio_url?: string | null
+          created_at?: string | null
+          description?: string | null
+          employee_id: string
+          id?: string
+          manager_id: string
+          status?: string | null
+          title: string
+          transcript?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          audio_url?: string | null
+          created_at?: string | null
+          description?: string | null
+          employee_id?: string
+          id?: string
+          manager_id?: string
+          status?: string | null
+          title?: string
+          transcript?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "manager" | "employee" | "hr"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +292,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["manager", "employee", "hr"],
+    },
   },
 } as const
