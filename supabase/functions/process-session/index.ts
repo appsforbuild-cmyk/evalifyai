@@ -432,24 +432,52 @@ serve(async (req) => {
       feedback = await rewriteWithoutBias(feedback, allIssues, lovableApiKey, tone);
     }
 
-    // Format feedback as markdown
+    // Format feedback as markdown with proper structure
+    const strengths = feedback.strengths || [];
+    const improvements = feedback.improvements || [];
+    const competencies = feedback.competencies || [];
+    const learningRecs = feedback.learningRecommendations || [];
+    const growthPath = feedback.growthPath || {};
+
     const formattedFeedback = `## Performance Summary
 
-${feedback.summary}
+${feedback.summary || 'No summary available.'}
 
 ## Strengths
-${feedback.strengths.map((s: string) => `- ${s}`).join('\n')}
+${strengths.map((s: any) => `### ${s.title || 'Strength'}
+${s.description || ''}
+${s.impact ? `**Impact:** ${s.impact}` : ''}`).join('\n\n')}
 
 ## Areas for Improvement
-${feedback.improvements.map((i: string) => `- ${i}`).join('\n')}
+${improvements.map((i: any) => `### ${i.title || 'Improvement Area'}
+${i.description || ''}
+${i.actionItem ? `**Action Item:** ${i.actionItem}` : ''}`).join('\n\n')}
 
 ## Competency Assessment
-${feedback.mapped_competencies.map((c: any) => `### ${c.competency}
-**Rating:** ${c.rating}
-**Evidence:** ${c.evidence}`).join('\n\n')}
+${competencies.map((c: any) => `### ${c.name || 'Competency'}
+**Rating:** ${c.rating || 'Not rated'}
+**Evidence:** ${c.evidence || 'No evidence provided'}`).join('\n\n')}
 
 ## Learning Recommendations
-${feedback.learning_recs.map((r: any) => `- **${r.recommendation}** (${r.priority} priority, ${r.type})`).join('\n')}`;
+${learningRecs.map((r: any) => `- **${r.topic || 'Topic'}** (${r.priority || 'medium'} priority, ${r.timeframe || '30 days'})
+  - ${r.resource || 'Self-directed learning'}`).join('\n')}
+
+## Personal Growth Path
+
+### Short-term Goals (30-60 days)
+${growthPath.shortTerm || 'Focus on immediate skill development and quick wins.'}
+
+### Mid-term Goals (3-6 months)
+${growthPath.midTerm || 'Build on foundational skills and expand responsibilities.'}
+
+### Long-term Career Path (1-2 years)
+${growthPath.longTerm || 'Continue professional development and pursue advancement opportunities.'}
+
+### Key Milestones
+${(growthPath.keyMilestones || ['Set clear goals', 'Track progress', 'Seek feedback']).map((m: string) => `- ${m}`).join('\n')}`;
+
+    // Extract competency tags
+    const competencyTags = competencies.map((c: any) => c.name).filter(Boolean);
 
     // 6. Save to database
     const { data: feedbackEntry, error: feedbackError } = await supabase
@@ -458,7 +486,7 @@ ${feedback.learning_recs.map((r: any) => `- **${r.recommendation}** (${r.priorit
         session_id: sessionId,
         ai_draft: formattedFeedback,
         final_feedback: formattedFeedback,
-        competency_tags: feedback.mapped_competencies.map((c: any) => c.competency),
+        competency_tags: competencyTags,
         tone_analysis: {
           sentiment: extractedData.sentiment,
           biasCheck: biasCheck,
