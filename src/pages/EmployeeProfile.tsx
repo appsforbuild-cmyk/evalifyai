@@ -1,13 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, User, Mail, Building2, Briefcase, Calendar, FileText, TrendingUp, Clock, Star, Target, BookOpen } from 'lucide-react';
+import { ArrowLeft, User, Mail, Building2, Briefcase, Calendar, FileText, TrendingUp, Clock, Star, Target, BookOpen, Download, BarChart3 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Progress } from '@/components/ui/progress';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
+import { toast } from 'sonner';
 
 interface Employee {
   id: string;
@@ -66,6 +68,50 @@ const generateFeedbackData = (employee: Employee) => {
         { name: 'Innovation', rating: 3.5 },
         { name: 'Reliability', rating: 5.0 }
       ]
+    },
+    {
+      id: '3',
+      title: 'Q1 2024 Performance Review',
+      date: '2024-03-15',
+      status: 'published',
+      summary: `Strong start to the year with notable improvements in key areas. ${employee.full_name} has shown dedication to professional development.`,
+      strengths: [
+        { title: 'Adaptability', description: 'Quickly adapted to new tools and processes', impact: 'Reduced onboarding time by 20%' },
+        { title: 'Team Spirit', description: 'Positive attitude and willingness to help others', impact: 'Improved team morale' },
+        { title: 'Quality Focus', description: 'Maintains high standards in all deliverables', impact: 'Client satisfaction increased' }
+      ],
+      improvements: [
+        { title: 'Time Management', description: 'Could improve prioritization of tasks', action: 'Use time-blocking technique' },
+        { title: 'Strategic Thinking', description: 'Would benefit from broader business perspective', action: 'Attend strategy sessions' }
+      ],
+      competencies: [
+        { name: 'Technical Skills', rating: 3.5 },
+        { name: 'Communication', rating: 3.5 },
+        { name: 'Leadership', rating: 3.0 },
+        { name: 'Innovation', rating: 3.5 },
+        { name: 'Reliability', rating: 4.0 }
+      ]
+    },
+    {
+      id: '4',
+      title: 'Q4 2023 Year-End Review',
+      date: '2023-12-15',
+      status: 'published',
+      summary: `Solid performance throughout Q4. Demonstrated growth mindset and commitment to continuous improvement.`,
+      strengths: [
+        { title: 'Learning Agility', description: 'Quick to learn new technologies', impact: 'Completed 3 certifications' },
+        { title: 'Reliability', description: 'Consistently meets deadlines', impact: '100% on-time delivery' }
+      ],
+      improvements: [
+        { title: 'Cross-functional Collaboration', description: 'More engagement with other teams needed', action: 'Join cross-team projects' }
+      ],
+      competencies: [
+        { name: 'Technical Skills', rating: 3.0 },
+        { name: 'Communication', rating: 3.0 },
+        { name: 'Leadership', rating: 2.5 },
+        { name: 'Innovation', rating: 3.0 },
+        { name: 'Reliability', rating: 4.0 }
+      ]
     }
   ];
 
@@ -105,6 +151,7 @@ const EmployeeProfile = () => {
   const navigate = useNavigate();
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [loading, setLoading] = useState(true);
+  const reportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (id) {
@@ -144,6 +191,87 @@ const EmployeeProfile = () => {
     return colors[team] || 'bg-muted text-muted-foreground';
   };
 
+  const exportReport = () => {
+    if (!employee) return;
+
+    const feedbackHistory = generateFeedbackData(employee);
+    const growthPath = generateGrowthPath(employee);
+    
+    // Generate report content
+    let reportContent = `
+EMPLOYEE FEEDBACK REPORT
+========================
+Generated: ${new Date().toLocaleDateString()}
+
+EMPLOYEE INFORMATION
+--------------------
+Name: ${employee.full_name}
+Email: ${employee.email}
+Team: ${employee.team}
+Department: ${employee.org_unit || 'Not assigned'}
+
+PERFORMANCE SUMMARY
+-------------------
+Total Feedback Sessions: ${feedbackHistory.length}
+Average Rating: ${(feedbackHistory.reduce((acc, f) => acc + f.competencies.reduce((a, c) => a + c.rating, 0) / f.competencies.length, 0) / feedbackHistory.length).toFixed(2)}/5.0
+
+FEEDBACK HISTORY
+----------------
+`;
+
+    feedbackHistory.forEach((feedback, index) => {
+      reportContent += `
+${index + 1}. ${feedback.title}
+   Date: ${new Date(feedback.date).toLocaleDateString()}
+   Status: ${feedback.status}
+   
+   Summary: ${feedback.summary}
+   
+   Strengths:
+${feedback.strengths.map(s => `   - ${s.title}: ${s.description} (Impact: ${s.impact})`).join('\n')}
+   
+   Areas for Improvement:
+${feedback.improvements.map(i => `   - ${i.title}: ${i.description} (Action: ${i.action})`).join('\n')}
+   
+   Competency Ratings:
+${feedback.competencies.map(c => `   - ${c.name}: ${c.rating}/5`).join('\n')}
+
+`;
+    });
+
+    reportContent += `
+GROWTH PATH
+-----------
+Short-term Goals:
+${growthPath.shortTerm.map(g => `- ${g}`).join('\n')}
+
+Mid-term Goals (3-6 months):
+${growthPath.midTerm.map(g => `- ${g}`).join('\n')}
+
+Long-term Goals (12+ months):
+${growthPath.longTerm.map(g => `- ${g}`).join('\n')}
+
+Key Milestones:
+${growthPath.milestones.map(m => `- ${m.quarter}: ${m.goal} (${m.status})`).join('\n')}
+
+Learning Recommendations:
+${growthPath.learningRecommendations.map(r => `- ${r.topic} (${r.priority} priority, ${r.timeframe}): ${r.resource}`).join('\n')}
+`;
+
+    // Download as text file
+    const blob = new Blob([reportContent], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${employee.full_name.replace(/\s+/g, '_')}_Feedback_Report.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    toast.success('Report downloaded successfully');
+  };
+
   if (loading) {
     return (
       <DashboardLayout>
@@ -170,12 +298,35 @@ const EmployeeProfile = () => {
   const latestFeedback = feedbackHistory[0];
   const avgRating = latestFeedback.competencies.reduce((acc, c) => acc + c.rating, 0) / latestFeedback.competencies.length;
 
+  // Prepare trend data for charts
+  const trendData = feedbackHistory.map(f => ({
+    period: new Date(f.date).toLocaleDateString('en-US', { month: 'short', year: '2-digit' }),
+    avgRating: (f.competencies.reduce((a, c) => a + c.rating, 0) / f.competencies.length).toFixed(1),
+    technical: f.competencies.find(c => c.name === 'Technical Skills')?.rating || 0,
+    communication: f.competencies.find(c => c.name === 'Communication')?.rating || 0,
+    leadership: f.competencies.find(c => c.name === 'Leadership')?.rating || 0,
+    innovation: f.competencies.find(c => c.name === 'Innovation')?.rating || 0,
+    reliability: f.competencies.find(c => c.name === 'Reliability')?.rating || 0,
+  })).reverse();
+
+  // Radar chart data for latest vs previous comparison
+  const radarData = latestFeedback.competencies.map(comp => ({
+    competency: comp.name,
+    current: comp.rating,
+    previous: feedbackHistory[1]?.competencies.find(c => c.name === comp.name)?.rating || 0,
+  }));
+
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-        <Button variant="ghost" onClick={() => navigate('/employees')} className="gap-2">
-          <ArrowLeft className="w-4 h-4" /> Back to Directory
-        </Button>
+      <div className="space-y-6" ref={reportRef}>
+        <div className="flex justify-between items-center">
+          <Button variant="ghost" onClick={() => navigate('/employees')} className="gap-2">
+            <ArrowLeft className="w-4 h-4" /> Back to Directory
+          </Button>
+          <Button onClick={exportReport} className="gap-2">
+            <Download className="w-4 h-4" /> Export Report
+          </Button>
+        </div>
 
         <Card>
           <CardContent className="pt-6">
@@ -211,6 +362,7 @@ const EmployeeProfile = () => {
         <Tabs defaultValue="overview" className="space-y-4">
           <TabsList>
             <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="trends">Performance Trends</TabsTrigger>
             <TabsTrigger value="feedback">Feedback History</TabsTrigger>
             <TabsTrigger value="growth">Growth Path</TabsTrigger>
           </TabsList>
@@ -306,6 +458,132 @@ const EmployeeProfile = () => {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="trends" className="space-y-4">
+            <div className="grid md:grid-cols-2 gap-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BarChart3 className="w-5 h-5" /> Overall Rating Trend
+                  </CardTitle>
+                  <CardDescription>Average rating progression over time</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-[300px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={trendData}>
+                        <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                        <XAxis dataKey="period" className="text-xs" />
+                        <YAxis domain={[0, 5]} className="text-xs" />
+                        <Tooltip 
+                          contentStyle={{ 
+                            backgroundColor: 'hsl(var(--background))', 
+                            border: '1px solid hsl(var(--border))',
+                            borderRadius: '8px'
+                          }} 
+                        />
+                        <Legend />
+                        <Line 
+                          type="monotone" 
+                          dataKey="avgRating" 
+                          name="Avg Rating"
+                          stroke="hsl(var(--primary))" 
+                          strokeWidth={3}
+                          dot={{ fill: 'hsl(var(--primary))' }}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Current vs Previous Quarter</CardTitle>
+                  <CardDescription>Competency comparison radar chart</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-[300px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <RadarChart data={radarData}>
+                        <PolarGrid />
+                        <PolarAngleAxis dataKey="competency" className="text-xs" />
+                        <PolarRadiusAxis domain={[0, 5]} />
+                        <Radar 
+                          name="Current" 
+                          dataKey="current" 
+                          stroke="hsl(var(--primary))" 
+                          fill="hsl(var(--primary))" 
+                          fillOpacity={0.3} 
+                        />
+                        <Radar 
+                          name="Previous" 
+                          dataKey="previous" 
+                          stroke="hsl(var(--muted-foreground))" 
+                          fill="hsl(var(--muted-foreground))" 
+                          fillOpacity={0.2} 
+                        />
+                        <Legend />
+                        <Tooltip />
+                      </RadarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Competency Breakdown Over Time</CardTitle>
+                <CardDescription>Individual competency progression</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[400px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={trendData}>
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                      <XAxis dataKey="period" className="text-xs" />
+                      <YAxis domain={[0, 5]} className="text-xs" />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: 'hsl(var(--background))', 
+                          border: '1px solid hsl(var(--border))',
+                          borderRadius: '8px'
+                        }} 
+                      />
+                      <Legend />
+                      <Line type="monotone" dataKey="technical" name="Technical Skills" stroke="#3b82f6" strokeWidth={2} />
+                      <Line type="monotone" dataKey="communication" name="Communication" stroke="#10b981" strokeWidth={2} />
+                      <Line type="monotone" dataKey="leadership" name="Leadership" stroke="#f59e0b" strokeWidth={2} />
+                      <Line type="monotone" dataKey="innovation" name="Innovation" stroke="#8b5cf6" strokeWidth={2} />
+                      <Line type="monotone" dataKey="reliability" name="Reliability" stroke="#ef4444" strokeWidth={2} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+
+            <div className="grid md:grid-cols-5 gap-4">
+              {latestFeedback.competencies.map((comp, i) => {
+                const prevRating = feedbackHistory[1]?.competencies.find(c => c.name === comp.name)?.rating || comp.rating;
+                const change = comp.rating - prevRating;
+                return (
+                  <Card key={comp.name}>
+                    <CardContent className="pt-4">
+                      <p className="text-sm text-muted-foreground mb-1">{comp.name}</p>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-2xl font-bold">{comp.rating}</span>
+                        <span className={`text-sm ${change > 0 ? 'text-green-600' : change < 0 ? 'text-red-600' : 'text-muted-foreground'}`}>
+                          {change > 0 ? `+${change.toFixed(1)}` : change < 0 ? change.toFixed(1) : '—'}
+                        </span>
+                      </div>
+                      <Progress value={comp.rating * 20} className="h-1.5 mt-2" />
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
           </TabsContent>
 
           <TabsContent value="feedback" className="space-y-4">
