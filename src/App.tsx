@@ -15,6 +15,7 @@ import VoiceSession from "./pages/VoiceSession";
 import FeedbackDraft from "./pages/FeedbackDraft";
 import EmployeeDirectory from "./pages/EmployeeDirectory";
 import EmployeeProfile from "./pages/EmployeeProfile";
+import TeamComparison from "./pages/TeamComparison";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -62,6 +63,7 @@ const AppRoutes = () => (
     <Route path="/feedback/:sessionId" element={<ProtectedRoute><FeedbackDraft /></ProtectedRoute>} />
     <Route path="/employees" element={<ProtectedRoute><EmployeeDirectory /></ProtectedRoute>} />
     <Route path="/employee/:id" element={<ProtectedRoute><EmployeeProfile /></ProtectedRoute>} />
+    <Route path="/team-comparison" element={<ProtectedRoute><TeamComparison /></ProtectedRoute>} />
     <Route path="*" element={<NotFound />} />
   </Routes>
 );
