@@ -56,6 +56,33 @@ export type Database = {
         }
         Relationships: []
       }
+      employees_directory: {
+        Row: {
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          org_unit: string | null
+          team: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          full_name: string
+          id?: string
+          org_unit?: string | null
+          team: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          full_name?: string
+          id?: string
+          org_unit?: string | null
+          team?: string
+        }
+        Relationships: []
+      }
       feedback_audit: {
         Row: {
           action: string
