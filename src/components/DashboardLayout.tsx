@@ -2,7 +2,7 @@ import { ReactNode } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { LogOut, LayoutDashboard, Users, Mic, BarChart3 } from 'lucide-react';
+import { LogOut, LayoutDashboard, Users, Mic, BarChart3, Shield } from 'lucide-react';
 import logo from '@/assets/evalifyai-logo.png';
 
 interface DashboardLayoutProps {
@@ -20,13 +20,14 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   };
 
   const navItems = [
+    { path: '/admin', label: 'Admin', icon: Shield, roles: ['admin'] },
     { path: '/manager', label: 'Manager', icon: Mic, roles: ['manager'] },
     { path: '/employee', label: 'My Feedback', icon: LayoutDashboard, roles: ['employee'] },
     { path: '/hr', label: 'HR Analytics', icon: BarChart3, roles: ['hr'] },
   ];
 
   const visibleNavItems = navItems.filter(item => 
-    item.roles.some(role => roles.includes(role as any))
+    item.roles.some(role => (roles as string[]).includes(role))
   );
 
   return (

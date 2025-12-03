@@ -3,7 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { Mic, Square, Pause, Play, Upload, Loader2, FileAudio, CheckCircle } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Mic, Square, Pause, Play, Upload, Loader2, FileAudio, CheckCircle, HelpCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -11,6 +12,13 @@ import DashboardLayout from '@/components/DashboardLayout';
 import { useAudioRecorder } from '@/hooks/useAudioRecorder';
 
 type ProcessingStep = 'idle' | 'uploading' | 'transcribing' | 'generating' | 'complete';
+
+interface FeedbackQuestion {
+  id: string;
+  question_text: string;
+  category: string;
+  display_order: number;
+}
 
 const VoiceSession = () => {
   const { sessionId } = useParams();
@@ -20,6 +28,7 @@ const VoiceSession = () => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [processingStep, setProcessingStep] = useState<ProcessingStep>('idle');
   const [transcript, setTranscript] = useState<string>('');
+  const [questions, setQuestions] = useState<FeedbackQuestion[]>([]);
 
   const {
     state: recordingState,
@@ -36,6 +45,7 @@ const VoiceSession = () => {
 
   useEffect(() => {
     fetchSession();
+    fetchQuestions();
   }, [sessionId]);
 
   const fetchSession = async () => {
@@ -56,6 +66,18 @@ const VoiceSession = () => {
       if (data.status === 'draft') {
         setProcessingStep('complete');
       }
+    }
+  };
+
+  const fetchQuestions = async () => {
+    const { data } = await supabase
+      .from('feedback_questions')
+      .select('id, question_text, category, display_order')
+      .eq('is_active', true)
+      .order('display_order', { ascending: true });
+
+    if (data) {
+      setQuestions(data);
     }
   };
 
@@ -368,10 +390,40 @@ const VoiceSession = () => {
 
             {/* Instructions */}
             {processingStep === 'idle' && !audioUrl && (
-              <div className="text-sm text-muted-foreground text-center space-y-1">
+              <div className="space-y-4 text-sm text-muted-foreground text-center">
                 <p>Speak naturally about the employee's performance.</p>
                 <p>EvalifyAI will transcribe and generate structured feedback.</p>
               </div>
+            )}
+
+            {/* Feedback Questions Guide */}
+            {processingStep === 'idle' && questions.length > 0 && (
+              <Card className="border-primary/20 bg-primary/5">
+                <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <HelpCircle className="w-5 h-5 text-primary" />
+                    Questions to Address
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    Please speak on each of these topics during your recording:
+                  </p>
+                  <div className="space-y-2">
+                    {questions.map((q, index) => (
+                      <div key={q.id} className="flex items-start gap-3 p-2 rounded bg-background/50">
+                        <Badge variant="outline" className="shrink-0 mt-0.5">
+                          {index + 1}
+                        </Badge>
+                        <div>
+                          <p className="text-sm font-medium">{q.question_text}</p>
+                          <p className="text-xs text-muted-foreground">{q.category}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
             )}
           </CardContent>
         </Card>

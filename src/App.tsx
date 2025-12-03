@@ -10,6 +10,7 @@ import Dashboard from "./pages/Dashboard";
 import ManagerDashboard from "./pages/ManagerDashboard";
 import EmployeeDashboard from "./pages/EmployeeDashboard";
 import HRDashboard from "./pages/HRDashboard";
+import AdminDashboard from "./pages/AdminDashboard";
 import VoiceSession from "./pages/VoiceSession";
 import FeedbackDraft from "./pages/FeedbackDraft";
 import NotFound from "./pages/NotFound";
@@ -51,6 +52,7 @@ const AppRoutes = () => (
     <Route path="/" element={<Index />} />
     <Route path="/auth" element={<AuthRoute><Auth /></AuthRoute>} />
     <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+    <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
     <Route path="/manager" element={<ProtectedRoute><ManagerDashboard /></ProtectedRoute>} />
     <Route path="/employee" element={<ProtectedRoute><EmployeeDashboard /></ProtectedRoute>} />
     <Route path="/hr" element={<ProtectedRoute><HRDashboard /></ProtectedRoute>} />

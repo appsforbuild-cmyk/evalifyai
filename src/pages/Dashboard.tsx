@@ -9,8 +9,10 @@ const Dashboard = () => {
 
   useEffect(() => {
     if (!loading) {
-      // Redirect based on user's role
-      if (roles.includes('hr')) {
+      // Redirect based on user's role (admin takes priority)
+      if ((roles as string[]).includes('admin')) {
+        navigate('/admin', { replace: true });
+      } else if (roles.includes('hr')) {
         navigate('/hr', { replace: true });
       } else if (roles.includes('manager')) {
         navigate('/manager', { replace: true });
