@@ -4,9 +4,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, User, Mail, Building2, Briefcase, Calendar, FileText, TrendingUp, Clock } from 'lucide-react';
+import { ArrowLeft, User, Mail, Building2, Briefcase, Calendar, FileText, TrendingUp, Clock, Star, Target, BookOpen } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import DashboardLayout from '@/components/DashboardLayout';
+import { Progress } from '@/components/ui/progress';
 
 interface Employee {
   id: string;
@@ -17,30 +18,97 @@ interface Employee {
   created_at: string;
 }
 
-interface FeedbackSession {
-  id: string;
-  title: string;
-  status: string;
-  created_at: string;
-  feedback_entries: {
-    final_feedback: string | null;
-    ai_draft: string | null;
-    is_published: boolean;
-    published_at: string | null;
-  }[];
-}
+// Sample feedback data generator based on employee
+const generateFeedbackData = (employee: Employee) => {
+  const feedbackTemplates = [
+    {
+      id: '1',
+      title: 'Q3 2024 Performance Review',
+      date: '2024-09-15',
+      status: 'published',
+      summary: `${employee.full_name} consistently delivers high-quality work and demonstrates strong technical expertise. Shows excellent collaboration skills and proactive communication with team members.`,
+      strengths: [
+        { title: 'Technical Excellence', description: 'Demonstrates deep understanding of core technologies and applies best practices consistently', impact: 'Reduced bug count by 30%' },
+        { title: 'Team Collaboration', description: 'Actively supports team members and shares knowledge effectively', impact: 'Mentored 2 junior developers' },
+        { title: 'Problem Solving', description: 'Approaches complex challenges with creative and efficient solutions', impact: 'Resolved critical issues within 2 hours' }
+      ],
+      improvements: [
+        { title: 'Documentation', description: 'Could improve technical documentation for complex features', action: 'Dedicate 2 hours weekly' },
+        { title: 'Presentation Skills', description: 'Would benefit from more practice presenting to larger audiences', action: 'Present at next team meeting' }
+      ],
+      competencies: [
+        { name: 'Technical Skills', rating: 4.5 },
+        { name: 'Communication', rating: 4.0 },
+        { name: 'Leadership', rating: 3.5 },
+        { name: 'Innovation', rating: 4.0 },
+        { name: 'Reliability', rating: 4.5 }
+      ]
+    },
+    {
+      id: '2',
+      title: 'Mid-Year Feedback Session',
+      date: '2024-06-20',
+      status: 'published',
+      summary: `Shows strong initiative and consistently exceeds expectations in project delivery. Demonstrates excellent analytical skills and attention to detail in the ${employee.team} team.`,
+      strengths: [
+        { title: 'Analytical Thinking', description: 'Excels at breaking down complex problems into manageable components', impact: 'Identified cost-saving opportunities' },
+        { title: 'Attention to Detail', description: 'Consistently produces error-free deliverables', impact: 'Zero critical bugs in releases' },
+        { title: 'Initiative', description: 'Proactively identifies and addresses potential issues', impact: 'Prevented 3 escalations' }
+      ],
+      improvements: [
+        { title: 'Delegation', description: 'Tends to take on too much work independently', action: 'Delegate at least 2 tasks per sprint' },
+        { title: 'Work-Life Balance', description: 'Could benefit from better boundary setting', action: 'Limit after-hours work' }
+      ],
+      competencies: [
+        { name: 'Technical Skills', rating: 4.0 },
+        { name: 'Communication', rating: 4.5 },
+        { name: 'Leadership', rating: 4.0 },
+        { name: 'Innovation', rating: 3.5 },
+        { name: 'Reliability', rating: 5.0 }
+      ]
+    }
+  ];
+
+  return feedbackTemplates;
+};
+
+const generateGrowthPath = (employee: Employee) => ({
+  shortTerm: [
+    'Complete current project deliverables with high quality',
+    'Improve documentation practices for team knowledge sharing',
+    'Participate in at least 2 cross-functional meetings'
+  ],
+  midTerm: [
+    'Lead a small feature team of 2-3 members',
+    'Present at company tech talk or knowledge sharing session',
+    'Complete advanced certification in core domain'
+  ],
+  longTerm: [
+    'Transition to senior technical or leadership role',
+    'Mentor 3+ junior developers successfully',
+    'Drive at least one major organizational initiative'
+  ],
+  milestones: [
+    { quarter: 'Q1 2025', goal: 'Complete advanced certification', status: 'in-progress' },
+    { quarter: 'Q2 2025', goal: 'Lead first project independently', status: 'upcoming' },
+    { quarter: 'Q4 2025', goal: 'Promotion readiness review', status: 'upcoming' }
+  ],
+  learningRecommendations: [
+    { topic: 'Public Speaking', priority: 'Medium', timeframe: '3 months', resource: 'Toastmasters or internal workshops' },
+    { topic: 'System Design', priority: 'High', timeframe: '6 months', resource: 'Advanced architecture course' },
+    { topic: 'Leadership Development', priority: 'High', timeframe: '6 months', resource: 'Internal leadership program' }
+  ]
+});
 
 const EmployeeProfile = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [employee, setEmployee] = useState<Employee | null>(null);
-  const [feedbackHistory, setFeedbackHistory] = useState<FeedbackSession[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (id) {
       fetchEmployee();
-      fetchFeedbackHistory();
     }
   }, [id]);
 
@@ -55,13 +123,6 @@ const EmployeeProfile = () => {
       setEmployee(data);
     }
     setLoading(false);
-  };
-
-  const fetchFeedbackHistory = async () => {
-    // For demo purposes, we'll show placeholder data since employees_directory
-    // employees aren't linked to real voice_sessions
-    // In production, you'd join on employee_id
-    setFeedbackHistory([]);
   };
 
   const getTeamColor = (team: string) => {
@@ -104,15 +165,18 @@ const EmployeeProfile = () => {
     );
   }
 
+  const feedbackHistory = generateFeedbackData(employee);
+  const growthPath = generateGrowthPath(employee);
+  const latestFeedback = feedbackHistory[0];
+  const avgRating = latestFeedback.competencies.reduce((acc, c) => acc + c.rating, 0) / latestFeedback.competencies.length;
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        {/* Back Button */}
         <Button variant="ghost" onClick={() => navigate('/employees')} className="gap-2">
           <ArrowLeft className="w-4 h-4" /> Back to Directory
         </Button>
 
-        {/* Profile Header */}
         <Card>
           <CardContent className="pt-6">
             <div className="flex flex-col md:flex-row gap-6 items-start">
@@ -122,29 +186,21 @@ const EmployeeProfile = () => {
               <div className="flex-1">
                 <h1 className="text-3xl font-bold text-primary mb-2">{employee.full_name}</h1>
                 <div className="flex flex-wrap gap-2 mb-4">
-                  <Badge className={getTeamColor(employee.team)} variant="secondary">
-                    {employee.team}
-                  </Badge>
-                  {employee.org_unit && (
-                    <Badge variant="outline">{employee.org_unit}</Badge>
-                  )}
+                  <Badge className={getTeamColor(employee.team)} variant="secondary">{employee.team}</Badge>
+                  {employee.org_unit && <Badge variant="outline">{employee.org_unit}</Badge>}
                 </div>
                 <div className="grid sm:grid-cols-2 gap-4 text-sm">
                   <div className="flex items-center gap-2 text-muted-foreground">
-                    <Mail className="w-4 h-4" />
-                    <span>{employee.email}</span>
+                    <Mail className="w-4 h-4" /><span>{employee.email}</span>
                   </div>
                   <div className="flex items-center gap-2 text-muted-foreground">
-                    <Building2 className="w-4 h-4" />
-                    <span>{employee.team}</span>
+                    <Building2 className="w-4 h-4" /><span>{employee.team}</span>
                   </div>
                   <div className="flex items-center gap-2 text-muted-foreground">
-                    <Briefcase className="w-4 h-4" />
-                    <span>{employee.org_unit || 'Not assigned'}</span>
+                    <Briefcase className="w-4 h-4" /><span>{employee.org_unit || 'Not assigned'}</span>
                   </div>
                   <div className="flex items-center gap-2 text-muted-foreground">
-                    <Calendar className="w-4 h-4" />
-                    <span>Added {new Date(employee.created_at).toLocaleDateString()}</span>
+                    <Calendar className="w-4 h-4" /><span>Added {new Date(employee.created_at).toLocaleDateString()}</span>
                   </div>
                 </div>
               </div>
@@ -152,7 +208,6 @@ const EmployeeProfile = () => {
           </CardContent>
         </Card>
 
-        {/* Tabs for different sections */}
         <Tabs defaultValue="overview" className="space-y-4">
           <TabsList>
             <TabsTrigger value="overview">Overview</TabsTrigger>
@@ -169,19 +224,19 @@ const EmployeeProfile = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold">0</div>
+                  <div className="text-3xl font-bold">{feedbackHistory.length}</div>
                   <p className="text-sm text-muted-foreground">Sessions received</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium flex items-center gap-2">
-                    <TrendingUp className="w-4 h-4" /> Performance Trend
+                    <Star className="w-4 h-4" /> Avg. Rating
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold text-green-600">—</div>
-                  <p className="text-sm text-muted-foreground">No data yet</p>
+                  <div className="text-3xl font-bold text-green-600">{avgRating.toFixed(1)}</div>
+                  <p className="text-sm text-muted-foreground">Out of 5.0</p>
                 </CardContent>
               </Card>
               <Card>
@@ -191,22 +246,63 @@ const EmployeeProfile = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold">—</div>
-                  <p className="text-sm text-muted-foreground">No feedback yet</p>
+                  <div className="text-3xl font-bold">{new Date(latestFeedback.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</div>
+                  <p className="text-sm text-muted-foreground">{latestFeedback.title}</p>
                 </CardContent>
               </Card>
             </div>
 
             <Card>
               <CardHeader>
-                <CardTitle>Quick Stats</CardTitle>
-                <CardDescription>Employee performance summary</CardDescription>
+                <CardTitle>Latest Performance Summary</CardTitle>
+                <CardDescription>{latestFeedback.title}</CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="text-center py-8 text-muted-foreground">
-                  <FileText className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>No feedback data available yet.</p>
-                  <p className="text-sm mt-2">Create a feedback session for this employee to see stats.</p>
+              <CardContent className="space-y-6">
+                <p className="text-muted-foreground">{latestFeedback.summary}</p>
+                
+                <div>
+                  <h4 className="font-semibold mb-3">Competency Ratings</h4>
+                  <div className="space-y-3">
+                    {latestFeedback.competencies.map((comp) => (
+                      <div key={comp.name} className="space-y-1">
+                        <div className="flex justify-between text-sm">
+                          <span>{comp.name}</span>
+                          <span className="font-medium">{comp.rating}/5</span>
+                        </div>
+                        <Progress value={comp.rating * 20} className="h-2" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="font-semibold mb-3 flex items-center gap-2">
+                    <TrendingUp className="w-4 h-4 text-green-600" /> Key Strengths
+                  </h4>
+                  <div className="grid md:grid-cols-3 gap-3">
+                    {latestFeedback.strengths.map((s, i) => (
+                      <div key={i} className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                        <h5 className="font-medium text-green-800 dark:text-green-200">{s.title}</h5>
+                        <p className="text-sm text-green-700 dark:text-green-300 mt-1">{s.description}</p>
+                        <p className="text-xs text-green-600 dark:text-green-400 mt-2">Impact: {s.impact}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="font-semibold mb-3 flex items-center gap-2">
+                    <Target className="w-4 h-4 text-amber-600" /> Areas for Improvement
+                  </h4>
+                  <div className="grid md:grid-cols-2 gap-3">
+                    {latestFeedback.improvements.map((imp, i) => (
+                      <div key={i} className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                        <h5 className="font-medium text-amber-800 dark:text-amber-200">{imp.title}</h5>
+                        <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">{imp.description}</p>
+                        <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">Action: {imp.action}</p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -219,46 +315,143 @@ const EmployeeProfile = () => {
                 <CardDescription>All feedback sessions for this employee</CardDescription>
               </CardHeader>
               <CardContent>
-                {feedbackHistory.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <FileText className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                    <p>No feedback history available.</p>
-                    <p className="text-sm mt-2">Feedback sessions will appear here once created.</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {feedbackHistory.map((session) => (
-                      <div key={session.id} className="p-4 border rounded-lg hover:bg-muted/50 cursor-pointer">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <h4 className="font-semibold">{session.title}</h4>
-                            <p className="text-sm text-muted-foreground">
-                              {new Date(session.created_at).toLocaleDateString()}
-                            </p>
-                          </div>
-                          <Badge variant={session.status === 'published' ? 'default' : 'secondary'}>
-                            {session.status}
-                          </Badge>
+                <div className="space-y-4">
+                  {feedbackHistory.map((session) => (
+                    <div key={session.id} className="p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+                      <div className="flex justify-between items-start mb-3">
+                        <div>
+                          <h4 className="font-semibold">{session.title}</h4>
+                          <p className="text-sm text-muted-foreground">
+                            {new Date(session.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                          </p>
+                        </div>
+                        <Badge variant={session.status === 'published' ? 'default' : 'secondary'}>{session.status}</Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-3">{session.summary}</p>
+                      <div className="flex flex-wrap gap-4 text-sm">
+                        <div className="flex items-center gap-1">
+                          <TrendingUp className="w-3 h-3 text-green-600" />
+                          <span>{session.strengths.length} Strengths</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Target className="w-3 h-3 text-amber-600" />
+                          <span>{session.improvements.length} Areas to Improve</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Star className="w-3 h-3 text-primary" />
+                          <span>Avg: {(session.competencies.reduce((a, c) => a + c.rating, 0) / session.competencies.length).toFixed(1)}/5</span>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                )}
+                    </div>
+                  ))}
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
 
           <TabsContent value="growth" className="space-y-4">
+            <div className="grid md:grid-cols-3 gap-4">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium">Short-term Goals</CardTitle>
+                  <CardDescription>Immediate priorities</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-2">
+                    {growthPath.shortTerm.map((goal, i) => (
+                      <li key={i} className="flex items-start gap-2 text-sm">
+                        <div className="w-1.5 h-1.5 rounded-full bg-green-500 mt-2 flex-shrink-0" />
+                        {goal}
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium">Mid-term Goals</CardTitle>
+                  <CardDescription>3-6 month horizon</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-2">
+                    {growthPath.midTerm.map((goal, i) => (
+                      <li key={i} className="flex items-start gap-2 text-sm">
+                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-2 flex-shrink-0" />
+                        {goal}
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium">Long-term Goals</CardTitle>
+                  <CardDescription>12+ month vision</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-2">
+                    {growthPath.longTerm.map((goal, i) => (
+                      <li key={i} className="flex items-start gap-2 text-sm">
+                        <div className="w-1.5 h-1.5 rounded-full bg-purple-500 mt-2 flex-shrink-0" />
+                        {goal}
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            </div>
+
             <Card>
               <CardHeader>
-                <CardTitle>Personal Growth Path</CardTitle>
-                <CardDescription>Career development roadmap based on feedback</CardDescription>
+                <CardTitle>Key Milestones</CardTitle>
+                <CardDescription>Tracking progress toward career goals</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-center py-8 text-muted-foreground">
-                  <TrendingUp className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>No growth path data available.</p>
-                  <p className="text-sm mt-2">Growth recommendations will appear after feedback sessions.</p>
+                <div className="space-y-4">
+                  {growthPath.milestones.map((milestone, i) => (
+                    <div key={i} className="flex items-center gap-4 p-3 border rounded-lg">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                        milestone.status === 'completed' ? 'bg-green-100 text-green-600' :
+                        milestone.status === 'in-progress' ? 'bg-blue-100 text-blue-600' :
+                        'bg-muted text-muted-foreground'
+                      }`}>
+                        <Target className="w-5 h-5" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-medium">{milestone.goal}</p>
+                        <p className="text-sm text-muted-foreground">{milestone.quarter}</p>
+                      </div>
+                      <Badge variant={
+                        milestone.status === 'completed' ? 'default' :
+                        milestone.status === 'in-progress' ? 'secondary' : 'outline'
+                      }>
+                        {milestone.status}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BookOpen className="w-5 h-5" /> Learning Recommendations
+                </CardTitle>
+                <CardDescription>Suggested development areas</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid md:grid-cols-3 gap-4">
+                  {growthPath.learningRecommendations.map((rec, i) => (
+                    <div key={i} className="p-4 bg-muted/50 rounded-lg">
+                      <div className="flex justify-between items-start mb-2">
+                        <h4 className="font-medium">{rec.topic}</h4>
+                        <Badge variant={rec.priority === 'High' ? 'destructive' : 'secondary'} className="text-xs">{rec.priority}</Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-2">{rec.resource}</p>
+                      <p className="text-xs text-muted-foreground">Timeframe: {rec.timeframe}</p>
+                    </div>
+                  ))}
                 </div>
               </CardContent>
             </Card>
