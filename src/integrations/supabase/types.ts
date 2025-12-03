@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      analytics_feedback_aggregate: {
+        Row: {
+          avg_fairness: number | null
+          avg_sentiment: number | null
+          computed_at: string
+          feedback_count: number | null
+          id: string
+          metadata: Json | null
+          org_unit: string | null
+          period_end: string
+          period_start: string
+          skill_gaps: Json | null
+          team: string | null
+        }
+        Insert: {
+          avg_fairness?: number | null
+          avg_sentiment?: number | null
+          computed_at?: string
+          feedback_count?: number | null
+          id?: string
+          metadata?: Json | null
+          org_unit?: string | null
+          period_end: string
+          period_start: string
+          skill_gaps?: Json | null
+          team?: string | null
+        }
+        Update: {
+          avg_fairness?: number | null
+          avg_sentiment?: number | null
+          computed_at?: string
+          feedback_count?: number | null
+          id?: string
+          metadata?: Json | null
+          org_unit?: string | null
+          period_end?: string
+          period_start?: string
+          skill_gaps?: Json | null
+          team?: string | null
+        }
+        Relationships: []
+      }
       feedback_audit: {
         Row: {
           action: string
@@ -121,6 +163,8 @@ export type Database = {
           email: string | null
           full_name: string | null
           id: string
+          org_unit: string | null
+          team: string | null
           updated_at: string | null
           user_id: string
         }
@@ -130,6 +174,8 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id?: string
+          org_unit?: string | null
+          team?: string | null
           updated_at?: string | null
           user_id: string
         }
@@ -139,6 +185,8 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id?: string
+          org_unit?: string | null
+          team?: string | null
           updated_at?: string | null
           user_id?: string
         }
