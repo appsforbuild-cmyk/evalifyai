@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { FEEDBACK_PROMPT_TEMPLATE, FAIRNESS_CHECK_TEMPLATE, FAIRNESS_REWRITE_TEMPLATE } from "../_shared/promptTemplates.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -141,44 +142,32 @@ async function transcribeAudio(audioUrl: string, sttApiKey: string): Promise<{ t
   return { transcript, sttResponse };
 }
 
-// Generate feedback using Lovable AI (Gemini)
+// Generate feedback using Lovable AI (Gemini) with template
 async function generateFeedback(
   transcript: string,
   employeeMetadata: any,
   extractedData: any,
-  lovableApiKey: string
+  lovableApiKey: string,
+  tone: string = 'neutral'
 ): Promise<any> {
   console.log('Generating feedback with Lovable AI...');
 
-  const prompt = `You are an expert HR feedback assistant. Based on the following spoken feedback transcript and employee context, generate a structured, professional, bias-free performance feedback.
+  // Build prompt from template
+  const prompt = FEEDBACK_PROMPT_TEMPLATE
+    .replace('{transcript}', transcript)
+    .replace('{employee_name}', employeeMetadata?.name || 'Employee')
+    .replace('{role}', employeeMetadata?.role || 'Team Member')
+    .replace('{summary}', employeeMetadata?.lastReviewSummary || 'No previous review')
+    .replace('{tone}', tone);
 
-## Employee Context
-- Name: ${employeeMetadata?.name || 'Employee'}
-- Role: ${employeeMetadata?.role || 'Team Member'}
-- Department: ${employeeMetadata?.department || 'General'}
+  // System prompt with additional context
+  const systemPrompt = `You are an expert HR feedback assistant. Always respond with valid JSON only, no markdown or explanations.
 
-## Extracted Information
+Additional context for enriched feedback:
 - Key Entities: ${extractedData.entities.join(', ') || 'None identified'}
 - Actions Noted: ${extractedData.actions.join(', ') || 'None identified'}
 - Results Mentioned: ${extractedData.results.join(', ') || 'None identified'}
 - Sentiment: ${extractedData.sentiment.label} (score: ${extractedData.sentiment.score.toFixed(2)})
-
-## Transcript
-"${transcript}"
-
-Generate a JSON response with this exact structure:
-{
-  "summary": "2-3 paragraph executive summary of overall performance",
-  "strengths": ["strength 1", "strength 2", "strength 3"],
-  "improvements": ["area for improvement 1", "area for improvement 2"],
-  "mapped_competencies": [
-    {"competency": "Communication", "rating": "Exceeds Expectations", "evidence": "specific example"},
-    {"competency": "Technical Skills", "rating": "Meets Expectations", "evidence": "specific example"}
-  ],
-  "learning_recs": [
-    {"recommendation": "recommendation text", "priority": "high|medium|low", "type": "course|mentoring|project|reading"}
-  ]
-}
 
 Guidelines:
 - Use clear, actionable language
@@ -198,7 +187,7 @@ Guidelines:
     body: JSON.stringify({
       model: 'google/gemini-2.5-flash',
       messages: [
-        { role: 'system', content: 'You are an expert HR feedback assistant. Always respond with valid JSON only, no markdown or explanations.' },
+        { role: 'system', content: systemPrompt },
         { role: 'user', content: prompt }
       ],
     }),
@@ -240,15 +229,62 @@ Guidelines:
   }
 }
 
-// Rewrite feedback to remove bias
+// Check fairness using AI with template
+async function checkFairnessWithAI(
+  draftText: string,
+  lovableApiKey: string
+): Promise<{ fairness: number; issues: string[] }> {
+  console.log('Checking fairness with AI...');
+
+  const prompt = FAIRNESS_CHECK_TEMPLATE.replace('{draft_text}', draftText);
+
+  const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${lovableApiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'google/gemini-2.5-flash',
+      messages: [
+        { role: 'system', content: 'You are a fairness analysis expert. Always respond with valid JSON only.' },
+        { role: 'user', content: prompt }
+      ],
+    }),
+  });
+
+  if (!response.ok) {
+    console.error('Fairness check failed, using fallback');
+    return { fairness: 0.8, issues: [] };
+  }
+
+  const data = await response.json();
+  const content = data.choices?.[0]?.message?.content || '';
+  
+  try {
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      return JSON.parse(jsonMatch[0]);
+    }
+  } catch (e) {
+    console.error('Failed to parse fairness check');
+  }
+  
+  return { fairness: 0.8, issues: [] };
+}
+
+// Rewrite feedback to remove bias using template
 async function rewriteWithoutBias(
   feedback: any,
   biasedTerms: string[],
-  lovableApiKey: string
+  lovableApiKey: string,
+  tone: string = 'neutral'
 ): Promise<any> {
   console.log('Rewriting feedback to remove bias...');
 
-  const prompt = `The following feedback contains potentially biased language. Please rewrite it to be completely neutral and professional, removing or replacing these biased terms: ${biasedTerms.join(', ')}
+  const prompt = FAIRNESS_REWRITE_TEMPLATE.replace('{tone}', tone) + `
+
+Flagged issues: ${biasedTerms.join(', ')}
 
 Original feedback:
 ${JSON.stringify(feedback, null, 2)}
@@ -296,7 +332,7 @@ serve(async (req) => {
   }
 
   try {
-    const { sessionId, audioBase64 } = await req.json();
+    const { sessionId, audioBase64, tone = 'neutral' } = await req.json();
     
     if (!sessionId) {
       throw new Error('Session ID is required');
@@ -372,17 +408,18 @@ serve(async (req) => {
       })
       .eq('id', sessionId);
 
-    // 4. Generate feedback using LLM
+    // 4. Generate feedback using LLM with templates
     let feedback;
     
     if (lovableApiKey) {
       const employeeMetadata = {
         name: employeeProfile?.full_name || 'Employee',
         role: 'Team Member',
-        department: 'General'
+        department: 'General',
+        lastReviewSummary: 'No previous review available'
       };
 
-      feedback = await generateFeedback(transcript, employeeMetadata, extractedData, lovableApiKey);
+      feedback = await generateFeedback(transcript, employeeMetadata, extractedData, lovableApiKey, tone);
     } else {
       feedback = {
         summary: `Based on the feedback session, the employee has demonstrated solid performance in their role. ${transcript}`,
@@ -402,12 +439,19 @@ serve(async (req) => {
 
     console.log('Initial feedback generated');
 
-    // 5. Fairness check
+    // 5. Fairness check - use both word-based and AI-based checks
     const biasCheck = checkBias(JSON.stringify(feedback));
+    let fairnessScore = { fairness: 0.8, issues: [] as string[] };
     
-    if (biasCheck.hasBias && lovableApiKey) {
-      console.log('Bias detected, rewriting...');
-      feedback = await rewriteWithoutBias(feedback, biasCheck.biasedTerms, lovableApiKey);
+    if (lovableApiKey) {
+      fairnessScore = await checkFairnessWithAI(JSON.stringify(feedback), lovableApiKey);
+    }
+    
+    // Rewrite if bias detected or fairness score is low
+    if ((biasCheck.hasBias || fairnessScore.fairness < 0.7) && lovableApiKey) {
+      console.log('Bias detected or low fairness, rewriting...');
+      const allIssues = [...biasCheck.biasedTerms, ...fairnessScore.issues];
+      feedback = await rewriteWithoutBias(feedback, allIssues, lovableApiKey, tone);
     }
 
     // Format feedback as markdown
@@ -440,7 +484,9 @@ ${feedback.learning_recs.map((r: any) => `- **${r.recommendation}** (${r.priorit
         tone_analysis: {
           sentiment: extractedData.sentiment,
           biasCheck: biasCheck,
-          extractedEntities: extractedData
+          fairnessScore: fairnessScore,
+          extractedEntities: extractedData,
+          selectedTone: tone
         }
       })
       .select()
@@ -466,7 +512,8 @@ ${feedback.learning_recs.map((r: any) => `- **${r.recommendation}** (${r.priorit
         draftText: formattedFeedback,
         transcript,
         extractedData,
-        biasCheck
+        biasCheck,
+        fairnessScore
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
