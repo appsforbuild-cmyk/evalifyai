@@ -53,12 +53,19 @@ const FeedbackDraft = () => {
     // Fetch session
     const { data: sessionData } = await supabase
       .from('voice_sessions')
-      .select('*, profiles!voice_sessions_employee_id_fkey(full_name, email)')
+      .select('*')
       .eq('id', sessionId)
       .single();
 
     if (sessionData) {
-      setSession(sessionData);
+      // Fetch employee profile separately
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('full_name, email')
+        .eq('user_id', sessionData.employee_id)
+        .maybeSingle();
+      
+      setSession({ ...sessionData, employee_profile: profileData });
     }
 
     // Fetch feedback
@@ -328,9 +335,9 @@ const FeedbackDraft = () => {
             <p className="text-muted-foreground">
               {isPublished ? 'Published feedback' : 'Review and edit AI-generated feedback'}
             </p>
-            {session.profiles?.full_name && (
+            {session.employee_profile?.full_name && (
               <p className="text-sm text-muted-foreground mt-1">
-                Employee: <span className="font-medium">{session.profiles.full_name}</span>
+                Employee: <span className="font-medium">{session.employee_profile.full_name}</span>
               </p>
             )}
           </div>
