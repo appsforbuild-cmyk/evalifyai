@@ -79,67 +79,45 @@ function checkBias(text: string): { hasBias: boolean; biasedTerms: string[] } {
   };
 }
 
-// Transcribe audio using AssemblyAI
-async function transcribeAudio(audioUrl: string, sttApiKey: string): Promise<{ transcript: string; sttResponse: any }> {
-  console.log('Starting transcription with AssemblyAI...');
+// Transcribe audio using OpenAI Whisper
+async function transcribeAudio(audioBase64: string, openaiApiKey: string): Promise<{ transcript: string; sttResponse: any }> {
+  console.log('Starting transcription with OpenAI Whisper...');
   
-  // Submit transcription request
-  const submitResponse = await fetch('https://api.assemblyai.com/v2/transcript', {
+  // Convert base64 to binary
+  const binaryString = atob(audioBase64);
+  const bytes = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  
+  // Create form data with the audio file
+  const formData = new FormData();
+  const blob = new Blob([bytes], { type: 'audio/webm' });
+  formData.append('file', blob, 'audio.webm');
+  formData.append('model', 'whisper-1');
+  formData.append('language', 'en');
+
+  const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
     method: 'POST',
     headers: {
-      'Authorization': sttApiKey,
-      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${openaiApiKey}`,
     },
-    body: JSON.stringify({
-      audio_url: audioUrl,
-      speaker_labels: true,
-      auto_highlights: true,
-    }),
+    body: formData,
   });
 
-  if (!submitResponse.ok) {
-    const error = await submitResponse.text();
-    console.error('AssemblyAI submit error:', error);
-    throw new Error(`Failed to submit transcription: ${error}`);
+  if (!response.ok) {
+    const error = await response.text();
+    console.error('OpenAI transcription error:', error);
+    throw new Error(`Failed to transcribe audio: ${error}`);
   }
 
-  const submitData = await submitResponse.json();
-  const transcriptId = submitData.id;
-  console.log(`Transcription submitted, ID: ${transcriptId}`);
-
-  // Poll for completion
-  let transcript = '';
-  let sttResponse = null;
-  let attempts = 0;
-  const maxAttempts = 60; // 5 minutes max
-
-  while (attempts < maxAttempts) {
-    await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
-    
-    const pollResponse = await fetch(`https://api.assemblyai.com/v2/transcript/${transcriptId}`, {
-      headers: { 'Authorization': sttApiKey },
-    });
-
-    const pollData = await pollResponse.json();
-    console.log(`Transcription status: ${pollData.status}`);
-
-    if (pollData.status === 'completed') {
-      transcript = pollData.text || '';
-      sttResponse = pollData;
-      break;
-    } else if (pollData.status === 'error') {
-      throw new Error(`Transcription failed: ${pollData.error}`);
-    }
-
-    attempts++;
-  }
-
-  if (!transcript) {
-    throw new Error('Transcription timed out');
-  }
-
+  const result = await response.json();
   console.log('Transcription completed');
-  return { transcript, sttResponse };
+  
+  return { 
+    transcript: result.text || '', 
+    sttResponse: result 
+  };
 }
 
 // Generate feedback using Lovable AI (Gemini) with template
@@ -342,7 +320,7 @@ serve(async (req) => {
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const sttApiKey = Deno.env.get('STT_API_KEY');
+    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
     const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
@@ -368,14 +346,14 @@ serve(async (req) => {
 
     console.log('Session found:', session.title);
 
-    // 2. Get audio URL or use provided base64
+    // 2. Transcribe audio using OpenAI Whisper
     let transcript = '';
     let sttResponse = null;
 
-    if (sttApiKey && session.audio_url) {
-      // Use AssemblyAI for real transcription
+    if (openaiApiKey && audioBase64) {
+      // Use OpenAI Whisper for real transcription
       try {
-        const result = await transcribeAudio(session.audio_url, sttApiKey);
+        const result = await transcribeAudio(audioBase64, openaiApiKey);
         transcript = result.transcript;
         sttResponse = result.sttResponse;
       } catch (sttError) {
@@ -383,7 +361,7 @@ serve(async (req) => {
         transcript = `Feedback session for ${session.title}. The employee has demonstrated strong performance in their role. They have shown excellent communication skills and consistently meet project deadlines. Their technical abilities continue to grow, and they collaborate effectively with team members. Areas for development include strategic thinking and leadership opportunities.`;
       }
     } else {
-      console.log('No STT API key, using mock transcript');
+      console.log('No OpenAI API key or audio data, using mock transcript');
       transcript = `Feedback session for ${session.title}. The employee has demonstrated strong performance in their role. They have shown excellent communication skills and consistently meet project deadlines. Their technical abilities continue to grow, and they collaborate effectively with team members. Areas for development include strategic thinking and leadership opportunities.`;
     }
 
