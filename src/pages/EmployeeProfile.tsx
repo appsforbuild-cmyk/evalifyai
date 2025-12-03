@@ -4,12 +4,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, User, Mail, Building2, Briefcase, Calendar, FileText, TrendingUp, Clock, Star, Target, BookOpen, Download, BarChart3 } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { ArrowLeft, User, Mail, Building2, Briefcase, Calendar, FileText, TrendingUp, Clock, Star, Target, BookOpen, Download, BarChart3, Users, Check } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Progress } from '@/components/ui/progress';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
 import { toast } from 'sonner';
+import { generatePDFReport } from '@/utils/pdfExport';
 
 interface Employee {
   id: string;
@@ -151,6 +153,7 @@ const EmployeeProfile = () => {
   const navigate = useNavigate();
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [loading, setLoading] = useState(true);
+  const [completedMilestones, setCompletedMilestones] = useState<string[]>([]);
   const reportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -191,85 +194,21 @@ const EmployeeProfile = () => {
     return colors[team] || 'bg-muted text-muted-foreground';
   };
 
-  const exportReport = () => {
-    if (!employee) return;
+  const toggleMilestoneComplete = (goal: string) => {
+    setCompletedMilestones(prev => 
+      prev.includes(goal) 
+        ? prev.filter(g => g !== goal)
+        : [...prev, goal]
+    );
+    toast.success(completedMilestones.includes(goal) ? 'Milestone unmarked' : 'Milestone marked as completed!');
+  };
 
+  const exportPDFReport = () => {
+    if (!employee) return;
     const feedbackHistory = generateFeedbackData(employee);
     const growthPath = generateGrowthPath(employee);
-    
-    // Generate report content
-    let reportContent = `
-EMPLOYEE FEEDBACK REPORT
-========================
-Generated: ${new Date().toLocaleDateString()}
-
-EMPLOYEE INFORMATION
---------------------
-Name: ${employee.full_name}
-Email: ${employee.email}
-Team: ${employee.team}
-Department: ${employee.org_unit || 'Not assigned'}
-
-PERFORMANCE SUMMARY
--------------------
-Total Feedback Sessions: ${feedbackHistory.length}
-Average Rating: ${(feedbackHistory.reduce((acc, f) => acc + f.competencies.reduce((a, c) => a + c.rating, 0) / f.competencies.length, 0) / feedbackHistory.length).toFixed(2)}/5.0
-
-FEEDBACK HISTORY
-----------------
-`;
-
-    feedbackHistory.forEach((feedback, index) => {
-      reportContent += `
-${index + 1}. ${feedback.title}
-   Date: ${new Date(feedback.date).toLocaleDateString()}
-   Status: ${feedback.status}
-   
-   Summary: ${feedback.summary}
-   
-   Strengths:
-${feedback.strengths.map(s => `   - ${s.title}: ${s.description} (Impact: ${s.impact})`).join('\n')}
-   
-   Areas for Improvement:
-${feedback.improvements.map(i => `   - ${i.title}: ${i.description} (Action: ${i.action})`).join('\n')}
-   
-   Competency Ratings:
-${feedback.competencies.map(c => `   - ${c.name}: ${c.rating}/5`).join('\n')}
-
-`;
-    });
-
-    reportContent += `
-GROWTH PATH
------------
-Short-term Goals:
-${growthPath.shortTerm.map(g => `- ${g}`).join('\n')}
-
-Mid-term Goals (3-6 months):
-${growthPath.midTerm.map(g => `- ${g}`).join('\n')}
-
-Long-term Goals (12+ months):
-${growthPath.longTerm.map(g => `- ${g}`).join('\n')}
-
-Key Milestones:
-${growthPath.milestones.map(m => `- ${m.quarter}: ${m.goal} (${m.status})`).join('\n')}
-
-Learning Recommendations:
-${growthPath.learningRecommendations.map(r => `- ${r.topic} (${r.priority} priority, ${r.timeframe}): ${r.resource}`).join('\n')}
-`;
-
-    // Download as text file
-    const blob = new Blob([reportContent], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${employee.full_name.replace(/\s+/g, '_')}_Feedback_Report.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    
-    toast.success('Report downloaded successfully');
+    generatePDFReport(employee, feedbackHistory, growthPath, completedMilestones);
+    toast.success('PDF report downloaded successfully');
   };
 
   if (loading) {
@@ -319,13 +258,18 @@ ${growthPath.learningRecommendations.map(r => `- ${r.topic} (${r.priority} prior
   return (
     <DashboardLayout>
       <div className="space-y-6" ref={reportRef}>
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-center flex-wrap gap-2">
           <Button variant="ghost" onClick={() => navigate('/employees')} className="gap-2">
             <ArrowLeft className="w-4 h-4" /> Back to Directory
           </Button>
-          <Button onClick={exportReport} className="gap-2">
-            <Download className="w-4 h-4" /> Export Report
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => navigate('/team-comparison')} className="gap-2">
+              <Users className="w-4 h-4" /> Team Comparison
+            </Button>
+            <Button onClick={exportPDFReport} className="gap-2">
+              <Download className="w-4 h-4" /> Export PDF
+            </Button>
+          </div>
         </div>
 
         <Card>
@@ -682,31 +626,46 @@ ${growthPath.learningRecommendations.map(r => `- ${r.topic} (${r.priority} prior
             <Card>
               <CardHeader>
                 <CardTitle>Key Milestones</CardTitle>
-                <CardDescription>Tracking progress toward career goals</CardDescription>
+                <CardDescription>Track your progress by marking milestones as completed</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {growthPath.milestones.map((milestone, i) => (
-                    <div key={i} className="flex items-center gap-4 p-3 border rounded-lg">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                        milestone.status === 'completed' ? 'bg-green-100 text-green-600' :
-                        milestone.status === 'in-progress' ? 'bg-blue-100 text-blue-600' :
-                        'bg-muted text-muted-foreground'
-                      }`}>
-                        <Target className="w-5 h-5" />
+                  {growthPath.milestones.map((milestone, i) => {
+                    const isCompleted = completedMilestones.includes(milestone.goal);
+                    return (
+                      <div 
+                        key={i} 
+                        className={`flex items-center gap-4 p-3 border rounded-lg cursor-pointer transition-all hover:shadow-md ${
+                          isCompleted ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' : ''
+                        }`}
+                        onClick={() => toggleMilestoneComplete(milestone.goal)}
+                      >
+                        <Checkbox 
+                          checked={isCompleted}
+                          onCheckedChange={() => toggleMilestoneComplete(milestone.goal)}
+                          onClick={(e) => e.stopPropagation()}
+                          className="h-6 w-6"
+                        />
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                          isCompleted ? 'bg-green-100 text-green-600' :
+                          milestone.status === 'in-progress' ? 'bg-blue-100 text-blue-600' :
+                          'bg-muted text-muted-foreground'
+                        }`}>
+                          {isCompleted ? <Check className="w-5 h-5" /> : <Target className="w-5 h-5" />}
+                        </div>
+                        <div className="flex-1">
+                          <p className={`font-medium ${isCompleted ? 'line-through text-muted-foreground' : ''}`}>{milestone.goal}</p>
+                          <p className="text-sm text-muted-foreground">{milestone.quarter}</p>
+                        </div>
+                        <Badge variant={
+                          isCompleted ? 'default' :
+                          milestone.status === 'in-progress' ? 'secondary' : 'outline'
+                        }>
+                          {isCompleted ? 'completed' : milestone.status}
+                        </Badge>
                       </div>
-                      <div className="flex-1">
-                        <p className="font-medium">{milestone.goal}</p>
-                        <p className="text-sm text-muted-foreground">{milestone.quarter}</p>
-                      </div>
-                      <Badge variant={
-                        milestone.status === 'completed' ? 'default' :
-                        milestone.status === 'in-progress' ? 'secondary' : 'outline'
-                      }>
-                        {milestone.status}
-                      </Badge>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </CardContent>
             </Card>

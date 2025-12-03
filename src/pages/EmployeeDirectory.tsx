@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Users, Building2, Filter, User } from 'lucide-react';
+import { Search, Users, Building2, Filter, User, BarChart3 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import DashboardLayout from '@/components/DashboardLayout';
 
@@ -105,9 +105,14 @@ const EmployeeDirectory = () => {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold text-primary">Employee Directory</h1>
-          <p className="text-muted-foreground">Browse and search all employees in the organization</p>
+        <div className="flex justify-between items-start flex-wrap gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-primary">Employee Directory</h1>
+            <p className="text-muted-foreground">Browse and search all employees in the organization</p>
+          </div>
+          <Button onClick={() => navigate('/team-comparison')} className="gap-2">
+            <BarChart3 className="w-4 h-4" /> Team Comparison
+          </Button>
         </div>
 
         {/* Stats */}
