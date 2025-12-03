@@ -54,11 +54,12 @@ const ManagerDashboard = () => {
 
   const fetchEmployees = async () => {
     const { data, error } = await supabase
-      .from('profiles')
-      .select('user_id, full_name, email');
+      .from('employees_directory')
+      .select('id, full_name, email')
+      .order('full_name');
 
     if (!error && data) {
-      setEmployees(data.map(p => ({ id: p.user_id, full_name: p.full_name || '', email: p.email || '' })));
+      setEmployees(data);
     }
   };
 

@@ -13,6 +13,8 @@ import HRDashboard from "./pages/HRDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import VoiceSession from "./pages/VoiceSession";
 import FeedbackDraft from "./pages/FeedbackDraft";
+import EmployeeDirectory from "./pages/EmployeeDirectory";
+import EmployeeProfile from "./pages/EmployeeProfile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -58,6 +60,8 @@ const AppRoutes = () => (
     <Route path="/hr" element={<ProtectedRoute><HRDashboard /></ProtectedRoute>} />
     <Route path="/session/:sessionId" element={<ProtectedRoute><VoiceSession /></ProtectedRoute>} />
     <Route path="/feedback/:sessionId" element={<ProtectedRoute><FeedbackDraft /></ProtectedRoute>} />
+    <Route path="/employees" element={<ProtectedRoute><EmployeeDirectory /></ProtectedRoute>} />
+    <Route path="/employee/:id" element={<ProtectedRoute><EmployeeProfile /></ProtectedRoute>} />
     <Route path="*" element={<NotFound />} />
   </Routes>
 );

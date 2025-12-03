@@ -62,15 +62,16 @@ const HRDashboard = () => {
       .select('*', { count: 'exact', head: true })
       .in('status', ['pending', 'recording', 'processing', 'draft']);
 
-    const { count: usersCount } = await supabase
-      .from('profiles')
+    // Get employee count from employees_directory (sample data)
+    const { count: employeesCount } = await supabase
+      .from('employees_directory')
       .select('*', { count: 'exact', head: true });
 
     setStats({
       totalSessions: sessionsCount || 0,
       publishedFeedback: publishedCount || 0,
       pendingSessions: pendingCount || 0,
-      totalUsers: usersCount || 0,
+      totalUsers: employeesCount || 0,
     });
   };
 
@@ -156,7 +157,7 @@ const HRDashboard = () => {
     { title: 'Total Sessions', value: stats.totalSessions, icon: FileText, color: 'text-blue-600' },
     { title: 'Published Feedback', value: stats.publishedFeedback, icon: CheckCircle, color: 'text-green-600' },
     { title: 'Pending Reviews', value: stats.pendingSessions, icon: Clock, color: 'text-yellow-600' },
-    { title: 'Total Users', value: stats.totalUsers, icon: Users, color: 'text-purple-600' },
+    { title: 'Total Employees', value: stats.totalUsers, icon: Users, color: 'text-purple-600' },
   ];
 
   const getStatusBadge = (status: string) => {
