@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { Mic, Square, Pause, Play, Upload, Loader2, FileAudio, CheckCircle, HelpCircle } from 'lucide-react';
+import { Mic, Square, Pause, Play, Upload, Loader2, FileAudio, CheckCircle, HelpCircle, RefreshCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -113,6 +113,52 @@ const VoiceSession = () => {
   const handleStopRecording = () => {
     stopRecording();
     toast.success('Recording stopped');
+  };
+
+  const regenerateFeedback = async () => {
+    if (!sessionId || !session?.audio_url) return;
+    
+    setProcessingStep('transcribing');
+    toast.info('Regenerating feedback...');
+    
+    try {
+      // Fetch the audio file and convert to base64
+      const response = await fetch(session.audio_url);
+      const blob = await response.blob();
+      
+      const reader = new FileReader();
+      reader.readAsDataURL(blob);
+      reader.onloadend = async () => {
+        const base64Audio = (reader.result as string).split(',')[1];
+        
+        // Call process-session edge function
+        const { data, error } = await supabase.functions.invoke('process-session', {
+          body: { sessionId, audioBase64: base64Audio }
+        });
+
+        if (error) {
+          console.error('Processing error:', error);
+          toast.error('Regeneration failed');
+          setProcessingStep('idle');
+          return;
+        }
+
+        setProcessingStep('generating');
+        
+        if (data?.transcript) {
+          setTranscript(data.transcript);
+        }
+
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
+        setProcessingStep('complete');
+        toast.success('Feedback regenerated!');
+      };
+    } catch (err) {
+      console.error('Regenerate error:', err);
+      toast.error('Regeneration failed');
+      setProcessingStep('idle');
+    }
   };
 
   const uploadAndProcess = async () => {
@@ -281,7 +327,7 @@ const VoiceSession = () => {
 
               {/* Controls */}
               <div className="flex gap-3">
-                {recordingState === 'idle' && !audioUrl && (
+                {recordingState === 'idle' && !audioUrl && !session?.audio_url && (
                   <Button onClick={handleStartRecording} size="lg" className="gap-2">
                     <Mic className="w-5 h-5" /> Start Recording
                   </Button>
@@ -310,6 +356,23 @@ const VoiceSession = () => {
                 )}
               </div>
             </div>
+
+            {/* Regenerate from existing audio */}
+            {session?.audio_url && recordingState === 'idle' && !audioUrl && processingStep === 'idle' && (
+              <div className="space-y-4 pt-4 border-t border-border">
+                <p className="text-sm text-muted-foreground text-center">
+                  This session has existing audio. You can regenerate feedback or record new audio.
+                </p>
+                <div className="flex gap-3 justify-center">
+                  <Button onClick={handleStartRecording} variant="outline" className="gap-2">
+                    <Mic className="w-4 h-4" /> Record New
+                  </Button>
+                  <Button onClick={regenerateFeedback} className="gap-2">
+                    <RefreshCw className="w-4 h-4" /> Regenerate Feedback
+                  </Button>
+                </div>
+              </div>
+            )}
 
             {/* Audio Preview */}
             {audioUrl && recordingState === 'stopped' && processingStep === 'idle' && (
