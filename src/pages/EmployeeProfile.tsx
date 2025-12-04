@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ArrowLeft, User, Mail, Building2, Briefcase, Calendar, FileText, TrendingUp, Clock, Star, Target, BookOpen, Download, BarChart3, Users, Check } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Progress } from '@/components/ui/progress';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
@@ -151,16 +152,19 @@ const generateGrowthPath = (employee: Employee) => ({
 const EmployeeProfile = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [loading, setLoading] = useState(true);
   const [completedMilestones, setCompletedMilestones] = useState<string[]>([]);
+  const [loadingMilestones, setLoadingMilestones] = useState(true);
   const reportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (id) {
       fetchEmployee();
+      fetchCompletedMilestones();
     }
-  }, [id]);
+  }, [id, user]);
 
   const fetchEmployee = async () => {
     const { data, error } = await supabase
@@ -173,6 +177,20 @@ const EmployeeProfile = () => {
       setEmployee(data);
     }
     setLoading(false);
+  };
+
+  const fetchCompletedMilestones = async () => {
+    if (!id || !user?.id) return;
+    
+    const { data, error } = await supabase
+      .from('milestone_completions')
+      .select('milestone_key')
+      .eq('employee_id', id);
+
+    if (!error && data) {
+      setCompletedMilestones(data.map(m => m.milestone_key));
+    }
+    setLoadingMilestones(false);
   };
 
   const getTeamColor = (team: string) => {
@@ -194,13 +212,42 @@ const EmployeeProfile = () => {
     return colors[team] || 'bg-muted text-muted-foreground';
   };
 
-  const toggleMilestoneComplete = (goal: string) => {
-    setCompletedMilestones(prev => 
-      prev.includes(goal) 
-        ? prev.filter(g => g !== goal)
-        : [...prev, goal]
-    );
-    toast.success(completedMilestones.includes(goal) ? 'Milestone unmarked' : 'Milestone marked as completed!');
+  const toggleMilestoneComplete = async (goal: string) => {
+    if (!id || !user?.id) return;
+
+    const isCurrentlyCompleted = completedMilestones.includes(goal);
+    
+    if (isCurrentlyCompleted) {
+      // Remove milestone
+      const { error } = await supabase
+        .from('milestone_completions')
+        .delete()
+        .eq('employee_id', id)
+        .eq('milestone_key', goal);
+
+      if (!error) {
+        setCompletedMilestones(prev => prev.filter(m => m !== goal));
+        toast.success('Milestone unmarked');
+      } else {
+        toast.error('Failed to update milestone');
+      }
+    } else {
+      // Add milestone
+      const { error } = await supabase
+        .from('milestone_completions')
+        .insert({
+          user_id: user.id,
+          employee_id: id,
+          milestone_key: goal,
+        });
+
+      if (!error) {
+        setCompletedMilestones(prev => [...prev, goal]);
+        toast.success('Milestone marked as completed!');
+      } else {
+        toast.error('Failed to update milestone');
+      }
+    }
   };
 
   const exportPDFReport = () => {

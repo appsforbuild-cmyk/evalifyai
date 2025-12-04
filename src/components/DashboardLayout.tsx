@@ -22,9 +22,10 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const navItems = [
     { path: '/admin', label: 'Admin', icon: Shield, roles: ['admin'] },
     { path: '/manager', label: 'Manager', icon: Mic, roles: ['manager'] },
-    { path: '/employee', label: 'My Feedback', icon: LayoutDashboard, roles: ['employee'] },
+    { path: '/employee', label: 'My Dashboard', icon: LayoutDashboard, roles: ['employee'] },
     { path: '/hr', label: 'HR Analytics', icon: BarChart3, roles: ['hr'] },
     { path: '/employees', label: 'Directory', icon: Users, roles: ['hr', 'admin', 'manager'] },
+    { path: '/team-comparison', label: 'Team Compare', icon: BarChart3, roles: ['manager', 'hr'] },
   ];
 
   const visibleNavItems = navItems.filter(item => 
