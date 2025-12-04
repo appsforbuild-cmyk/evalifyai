@@ -213,6 +213,45 @@ export type Database = {
         }
         Relationships: []
       }
+      goals: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          description: string | null
+          due_date: string | null
+          id: string
+          profile_id: string
+          progress: number | null
+          status: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          profile_id: string
+          progress?: number | null
+          status?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          profile_id?: string
+          progress?: number | null
+          status?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       milestone_completions: {
         Row: {
           completed_at: string | null
@@ -273,6 +312,36 @@ export type Database = {
           team?: string | null
           updated_at?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      quick_feedback: {
+        Row: {
+          audio_path: string | null
+          created_at: string | null
+          created_by_profile_id: string
+          employee_profile_id: string
+          feedback_type: string | null
+          id: string
+          transcript: string | null
+        }
+        Insert: {
+          audio_path?: string | null
+          created_at?: string | null
+          created_by_profile_id: string
+          employee_profile_id: string
+          feedback_type?: string | null
+          id?: string
+          transcript?: string | null
+        }
+        Update: {
+          audio_path?: string | null
+          created_at?: string | null
+          created_by_profile_id?: string
+          employee_profile_id?: string
+          feedback_type?: string | null
+          id?: string
+          transcript?: string | null
         }
         Relationships: []
       }

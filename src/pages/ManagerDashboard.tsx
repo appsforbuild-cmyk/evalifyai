@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
-import { Plus, Mic, FileText, Clock, CheckCircle, Users, TrendingUp, Star, BarChart3, User } from 'lucide-react';
+import { Plus, Mic, FileText, Clock, CheckCircle, Users, TrendingUp, Star, BarChart3, User, MessageSquare, Target } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -152,6 +152,12 @@ const ManagerDashboard = () => {
             <p className="text-muted-foreground">Manage feedback sessions and track team performance</p>
           </div>
           <div className="flex gap-2">
+            <Button variant="outline" onClick={() => navigate('/quick-feedback')} className="gap-2">
+              <MessageSquare className="w-4 h-4" /> Quick Feedback
+            </Button>
+            <Button variant="outline" onClick={() => navigate('/goals')} className="gap-2">
+              <Target className="w-4 h-4" /> Goals
+            </Button>
             <Button variant="outline" onClick={() => navigate('/team-comparison')} className="gap-2">
               <BarChart3 className="w-4 h-4" /> Team Comparison
             </Button>

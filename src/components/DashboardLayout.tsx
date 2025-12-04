@@ -2,7 +2,7 @@ import { ReactNode } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { LogOut, LayoutDashboard, Users, Mic, BarChart3, Shield } from 'lucide-react';
+import { LogOut, LayoutDashboard, Users, Mic, BarChart3, Shield, MessageSquare, Target, TrendingUp } from 'lucide-react';
 import logo from '@/assets/evalifyai-logo.png';
 
 interface DashboardLayoutProps {
@@ -25,7 +25,10 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     { path: '/employee', label: 'My Dashboard', icon: LayoutDashboard, roles: ['employee'] },
     { path: '/hr', label: 'HR Analytics', icon: BarChart3, roles: ['hr'] },
     { path: '/employees', label: 'Directory', icon: Users, roles: ['hr', 'admin', 'manager'] },
-    { path: '/team-comparison', label: 'Team Compare', icon: BarChart3, roles: ['manager', 'hr'] },
+    { path: '/team-comparison', label: 'Team Compare', icon: TrendingUp, roles: ['manager', 'hr'] },
+    { path: '/quick-feedback', label: 'Quick Feedback', icon: MessageSquare, roles: ['manager', 'employee'] },
+    { path: '/goals', label: 'Goals', icon: Target, roles: ['manager', 'employee'] },
+    { path: '/hr-analytics', label: 'Analytics', icon: BarChart3, roles: ['hr'] },
   ];
 
   const visibleNavItems = navItems.filter(item => 

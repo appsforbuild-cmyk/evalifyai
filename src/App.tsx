@@ -16,6 +16,9 @@ import FeedbackDraft from "./pages/FeedbackDraft";
 import EmployeeDirectory from "./pages/EmployeeDirectory";
 import EmployeeProfile from "./pages/EmployeeProfile";
 import TeamComparison from "./pages/TeamComparison";
+import QuickFeedback from "./pages/QuickFeedback";
+import Goals from "./pages/Goals";
+import HRAnalytics from "./pages/HRAnalytics";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -64,6 +67,9 @@ const AppRoutes = () => (
     <Route path="/employees" element={<ProtectedRoute><EmployeeDirectory /></ProtectedRoute>} />
     <Route path="/employee/:id" element={<ProtectedRoute><EmployeeProfile /></ProtectedRoute>} />
     <Route path="/team-comparison" element={<ProtectedRoute><TeamComparison /></ProtectedRoute>} />
+    <Route path="/quick-feedback" element={<ProtectedRoute><QuickFeedback /></ProtectedRoute>} />
+    <Route path="/goals" element={<ProtectedRoute><Goals /></ProtectedRoute>} />
+    <Route path="/hr-analytics" element={<ProtectedRoute><HRAnalytics /></ProtectedRoute>} />
     <Route path="*" element={<NotFound />} />
   </Routes>
 );
