@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { FileText, TrendingUp, Calendar, Star, Target, BookOpen, Check, User, BarChart3 } from 'lucide-react';
+import { FileText, TrendingUp, Calendar, Star, Target, BookOpen, Check, User, BarChart3, MessageSquare } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import DashboardLayout from '@/components/DashboardLayout';
@@ -24,6 +26,7 @@ interface FeedbackItem {
 }
 
 const EmployeeDashboard = () => {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [feedbacks, setFeedbacks] = useState<FeedbackItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -155,9 +158,19 @@ const EmployeeDashboard = () => {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold text-primary">My Dashboard</h1>
-          <p className="text-muted-foreground">Track your performance, feedback, and growth journey</p>
+        <div className="flex justify-between items-start">
+          <div>
+            <h1 className="text-3xl font-bold text-primary">My Dashboard</h1>
+            <p className="text-muted-foreground">Track your performance, feedback, and growth journey</p>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => navigate('/quick-feedback')} className="gap-2">
+              <MessageSquare className="w-4 h-4" /> Quick Feedback
+            </Button>
+            <Button variant="outline" onClick={() => navigate('/goals')} className="gap-2">
+              <Target className="w-4 h-4" /> My Goals
+            </Button>
+          </div>
         </div>
 
         <Tabs defaultValue="overview" className="space-y-4">

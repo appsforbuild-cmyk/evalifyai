@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Users, FileText, TrendingUp, BarChart3, Clock, CheckCircle, Download, RefreshCw } from 'lucide-react';
+import { Users, FileText, TrendingUp, BarChart3, Clock, CheckCircle, Download, RefreshCw, PieChart as PieChartIcon } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useToast } from '@/hooks/use-toast';
@@ -29,6 +30,7 @@ interface Aggregate {
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--accent))', '#63A4FF', '#002D62'];
 
 const HRDashboard = () => {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [stats, setStats] = useState({
     totalSessions: 0,
@@ -201,6 +203,9 @@ const HRDashboard = () => {
             <p className="text-muted-foreground">Organization-wide feedback analytics</p>
           </div>
           <div className="flex gap-2">
+            <Button variant="outline" onClick={() => navigate('/hr-analytics')} className="gap-2">
+              <PieChartIcon className="w-4 h-4" /> Detailed Analytics
+            </Button>
             <Button variant="outline" onClick={refreshAnalytics} disabled={refreshing}>
               <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
               Refresh
