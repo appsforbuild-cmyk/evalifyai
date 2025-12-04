@@ -213,6 +213,33 @@ export type Database = {
         }
         Relationships: []
       }
+      milestone_completions: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          employee_id: string
+          id: string
+          milestone_key: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          employee_id: string
+          id?: string
+          milestone_key: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          employee_id?: string
+          id?: string
+          milestone_key?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
