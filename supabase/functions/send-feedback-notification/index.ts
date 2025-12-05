@@ -20,9 +20,35 @@ serve(async (req) => {
   }
 
   try {
-    const resendApiKey = Deno.env.get("RESEND_API_KEY");
+    // Authentication check
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'Missing authorization header' }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const resendApiKey = Deno.env.get("RESEND_API_KEY");
+
+    // Verify the user's JWT token
+    const userClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } }
+    });
+    
+    const { data: { user }, error: authError } = await userClient.auth.getUser();
+    if (authError || !user) {
+      console.error('Auth error:', authError);
+      return new Response(JSON.stringify({ error: 'Invalid or expired token' }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
+    console.log(`Authenticated user: ${user.id}`);
 
     if (!resendApiKey) {
       console.log("RESEND_API_KEY not configured, skipping email notification");
@@ -35,6 +61,30 @@ serve(async (req) => {
     const { feedbackId, employeeId, sessionTitle, managerName }: NotificationRequest = await req.json();
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    
+    // Verify the user is the manager of this feedback's session
+    const { data: feedbackCheck, error: feedbackCheckError } = await supabase
+      .from('feedback_entries')
+      .select('session_id, voice_sessions!inner(manager_id)')
+      .eq('id', feedbackId)
+      .single();
+    
+    if (feedbackCheckError || !feedbackCheck) {
+      return new Response(
+        JSON.stringify({ error: 'Feedback not found' }),
+        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    
+    const sessionData = feedbackCheck.voice_sessions as any;
+    if (sessionData?.manager_id !== user.id) {
+      console.error(`Authorization failed: user ${user.id} is not manager of feedback ${feedbackId}`);
+      return new Response(
+        JSON.stringify({ error: 'Not authorized to send notification for this feedback' }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const resend = new Resend(resendApiKey);
 
     // Get employee details
