@@ -310,6 +310,35 @@ serve(async (req) => {
   }
 
   try {
+    // Authentication check
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'Missing authorization header' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    
+    // Verify the user's JWT token
+    const userClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } }
+    });
+    
+    const { data: { user }, error: authError } = await userClient.auth.getUser();
+    if (authError || !user) {
+      console.error('Auth error:', authError);
+      return new Response(JSON.stringify({ error: 'Invalid or expired token' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    console.log(`Authenticated user: ${user.id}`);
+
     const { sessionId, audioBase64, tone = 'neutral' } = await req.json();
     
     if (!sessionId) {
@@ -318,12 +347,32 @@ serve(async (req) => {
 
     console.log(`Processing session: ${sessionId}`);
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
     const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    
+    // Verify user owns this session (is the manager)
+    const { data: sessionCheck, error: sessionCheckError } = await supabase
+      .from('voice_sessions')
+      .select('manager_id')
+      .eq('id', sessionId)
+      .single();
+    
+    if (sessionCheckError || !sessionCheck) {
+      return new Response(JSON.stringify({ error: 'Session not found' }), {
+        status: 404,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    
+    if (sessionCheck.manager_id !== user.id) {
+      console.error(`Authorization failed: user ${user.id} is not manager of session ${sessionId}`);
+      return new Response(JSON.stringify({ error: 'Not authorized to process this session' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
 
     // 1. Get session details
     const { data: session, error: sessionError } = await supabase
