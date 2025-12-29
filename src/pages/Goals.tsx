@@ -14,6 +14,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import DashboardLayout from '@/components/DashboardLayout';
+import { goalSchema } from '@/lib/validations';
 
 interface Goal {
   id: string;
@@ -35,6 +36,7 @@ const Goals = () => {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -73,6 +75,7 @@ const Goals = () => {
       progress: 0,
     });
     setEditingGoal(null);
+    setFormErrors({});
   };
 
   const openEditDialog = (goal: Goal) => {
@@ -89,8 +92,27 @@ const Goals = () => {
   };
 
   const handleSubmit = async () => {
-    if (!formData.title.trim()) {
-      toast.error('Please enter a goal title');
+    setFormErrors({});
+    
+    // Validate with Zod
+    const result = goalSchema.safeParse({
+      title: formData.title,
+      description: formData.description,
+      category: formData.category,
+      due_date: formData.due_date,
+      status: formData.status,
+      progress: formData.progress,
+    });
+    
+    if (!result.success) {
+      const fieldErrors: Record<string, string> = {};
+      result.error.errors.forEach((err) => {
+        if (err.path[0]) {
+          fieldErrors[err.path[0] as string] = err.message;
+        }
+      });
+      setFormErrors(fieldErrors);
+      toast.error('Please fix the validation errors');
       return;
     }
 
@@ -234,7 +256,12 @@ const Goals = () => {
                     placeholder="e.g., Complete leadership certification"
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    maxLength={200}
+                    className={formErrors.title ? 'border-destructive' : ''}
                   />
+                  {formErrors.title && (
+                    <p className="text-sm text-destructive">{formErrors.title}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label>Description</Label>
@@ -243,7 +270,12 @@ const Goals = () => {
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     rows={3}
+                    maxLength={2000}
+                    className={formErrors.description ? 'border-destructive' : ''}
                   />
+                  {formErrors.description && (
+                    <p className="text-sm text-destructive">{formErrors.description}</p>
+                  )}
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
