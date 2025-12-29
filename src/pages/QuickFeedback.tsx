@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import DashboardLayout from '@/components/DashboardLayout';
+import { quickFeedbackSchema } from '@/lib/validations';
 
 interface Employee {
   id: string;
@@ -40,6 +41,7 @@ const QuickFeedback = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [recentFeedback, setRecentFeedback] = useState<QuickFeedbackEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -142,12 +144,24 @@ const QuickFeedback = () => {
   };
 
   const submitFeedback = async () => {
-    if (!selectedEmployee) {
-      toast.error('Please select an employee');
-      return;
-    }
-    if (!feedbackText.trim()) {
-      toast.error('Please enter feedback text');
+    setFormErrors({});
+    
+    // Validate with Zod
+    const result = quickFeedbackSchema.safeParse({
+      employee_id: selectedEmployee,
+      feedback_text: feedbackText,
+      feedback_type: feedbackType,
+    });
+    
+    if (!result.success) {
+      const fieldErrors: Record<string, string> = {};
+      result.error.errors.forEach((err) => {
+        if (err.path[0]) {
+          fieldErrors[err.path[0] as string] = err.message;
+        }
+      });
+      setFormErrors(fieldErrors);
+      toast.error('Please fix the validation errors');
       return;
     }
 
@@ -211,7 +225,7 @@ const QuickFeedback = () => {
               <div className="space-y-2">
                 <Label>Select Employee</Label>
                 <select
-                  className="w-full px-3 py-2 border rounded-md bg-background"
+                  className={`w-full px-3 py-2 border rounded-md bg-background ${formErrors.employee_id ? 'border-destructive' : ''}`}
                   value={selectedEmployee}
                   onChange={(e) => setSelectedEmployee(e.target.value)}
                 >
@@ -222,6 +236,9 @@ const QuickFeedback = () => {
                     </option>
                   ))}
                 </select>
+                {formErrors.employee_id && (
+                  <p className="text-sm text-destructive">{formErrors.employee_id}</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -248,7 +265,12 @@ const QuickFeedback = () => {
                   value={feedbackText}
                   onChange={(e) => setFeedbackText(e.target.value)}
                   rows={6}
+                  maxLength={5000}
+                  className={formErrors.feedback_text ? 'border-destructive' : ''}
                 />
+                {formErrors.feedback_text && (
+                  <p className="text-sm text-destructive">{formErrors.feedback_text}</p>
+                )}
               </div>
 
               <div className="flex gap-2">

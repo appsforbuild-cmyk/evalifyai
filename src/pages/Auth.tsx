@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import logo from '@/assets/evalifyai-logo.png';
+import { loginSchema, signupSchema } from '@/lib/validations';
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -14,11 +15,34 @@ const Auth = () => {
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const { signIn, signUp } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrors({});
+    
+    // Validate inputs with Zod
+    const schema = isLogin ? loginSchema : signupSchema;
+    const data = isLogin 
+      ? { email, password } 
+      : { email, password, fullName };
+    
+    const result = schema.safeParse(data);
+    
+    if (!result.success) {
+      const fieldErrors: Record<string, string> = {};
+      result.error.errors.forEach((err) => {
+        if (err.path[0]) {
+          fieldErrors[err.path[0] as string] = err.message;
+        }
+      });
+      setErrors(fieldErrors);
+      toast.error('Please fix the validation errors');
+      return;
+    }
+    
     setLoading(true);
 
     try {
@@ -70,7 +94,11 @@ const Auth = () => {
                   onChange={(e) => setFullName(e.target.value)}
                   placeholder="John Doe"
                   required={!isLogin}
+                  className={errors.fullName ? 'border-destructive' : ''}
                 />
+                {errors.fullName && (
+                  <p className="text-sm text-destructive">{errors.fullName}</p>
+                )}
               </div>
             )}
             
@@ -83,7 +111,11 @@ const Auth = () => {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@company.com"
                 required
+                className={errors.email ? 'border-destructive' : ''}
               />
+              {errors.email && (
+                <p className="text-sm text-destructive">{errors.email}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -95,8 +127,12 @@ const Auth = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 required
-                minLength={6}
+                minLength={8}
+                className={errors.password ? 'border-destructive' : ''}
               />
+              {errors.password && (
+                <p className="text-sm text-destructive">{errors.password}</p>
+              )}
             </div>
 
             {!isLogin && (
