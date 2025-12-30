@@ -368,232 +368,233 @@ const VoiceSession = () => {
             onComplete={handlePerQuestionComplete}
           />
         ) : (
-        /* Full Session Recording Card */
-        <Card className="border-border">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Mic className="w-5 h-5 text-primary" /> Voice Recording
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-8">
-            {/* Recording Visualization */}
-            <div className="flex flex-col items-center gap-6">
-              <div className="relative">
-                {/* Audio level ring */}
-                <div 
-                  className={`absolute inset-0 rounded-full transition-all duration-100 ${
-                    recordingState === 'recording' ? 'bg-destructive/20' : 'bg-transparent'
-                  }`}
-                  style={{
-                    transform: `scale(${1 + audioLevel * 0.5})`,
-                    opacity: audioLevel
-                  }}
-                />
-                
-                {/* Main circle */}
-                <div className={`relative w-36 h-36 rounded-full flex items-center justify-center transition-all ${
-                  recordingState === 'recording' 
-                    ? 'bg-destructive/10 border-4 border-destructive animate-pulse' 
-                    : recordingState === 'paused'
-                    ? 'bg-warning/10 border-4 border-warning'
-                    : audioUrl
-                    ? 'bg-primary/10 border-4 border-primary'
-                    : 'bg-muted border-4 border-border'
-                }`}>
-                  {recordingState === 'recording' ? (
-                    <div className="flex flex-col items-center">
-                      <Mic className="w-10 h-10 text-destructive" />
-                      <span className="text-sm font-mono text-destructive mt-1">
-                        {formatDuration(duration)}
-                      </span>
-                    </div>
-                  ) : recordingState === 'paused' ? (
-                    <div className="flex flex-col items-center">
-                      <Pause className="w-10 h-10 text-warning" />
-                      <span className="text-sm font-mono text-warning mt-1">
-                        {formatDuration(duration)}
-                      </span>
-                    </div>
-                  ) : audioUrl ? (
-                    <FileAudio className="w-10 h-10 text-primary" />
-                  ) : (
-                    <Mic className="w-10 h-10 text-muted-foreground" />
+          /* Full Session Recording Card */
+          <Card className="border-border">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Mic className="w-5 h-5 text-primary" /> Voice Recording
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-8">
+              {/* Recording Visualization */}
+              <div className="flex flex-col items-center gap-6">
+                <div className="relative">
+                  {/* Audio level ring */}
+                  <div 
+                    className={`absolute inset-0 rounded-full transition-all duration-100 ${
+                      recordingState === 'recording' ? 'bg-destructive/20' : 'bg-transparent'
+                    }`}
+                    style={{
+                      transform: `scale(${1 + audioLevel * 0.5})`,
+                      opacity: audioLevel
+                    }}
+                  />
+                  
+                  {/* Main circle */}
+                  <div className={`relative w-36 h-36 rounded-full flex items-center justify-center transition-all ${
+                    recordingState === 'recording' 
+                      ? 'bg-destructive/10 border-4 border-destructive animate-pulse' 
+                      : recordingState === 'paused'
+                      ? 'bg-warning/10 border-4 border-warning'
+                      : audioUrl
+                      ? 'bg-primary/10 border-4 border-primary'
+                      : 'bg-muted border-4 border-border'
+                  }`}>
+                    {recordingState === 'recording' ? (
+                      <div className="flex flex-col items-center">
+                        <Mic className="w-10 h-10 text-destructive" />
+                        <span className="text-sm font-mono text-destructive mt-1">
+                          {formatDuration(duration)}
+                        </span>
+                      </div>
+                    ) : recordingState === 'paused' ? (
+                      <div className="flex flex-col items-center">
+                        <Pause className="w-10 h-10 text-warning" />
+                        <span className="text-sm font-mono text-warning mt-1">
+                          {formatDuration(duration)}
+                        </span>
+                      </div>
+                    ) : audioUrl ? (
+                      <FileAudio className="w-10 h-10 text-primary" />
+                    ) : (
+                      <Mic className="w-10 h-10 text-muted-foreground" />
+                    )}
+                  </div>
+                </div>
+
+                {/* Duration display when stopped */}
+                {audioUrl && recordingState === 'stopped' && (
+                  <p className="text-sm text-muted-foreground">
+                    Recording duration: {formatDuration(duration)}
+                  </p>
+                )}
+
+                {/* Controls */}
+                <div className="flex gap-3">
+                  {recordingState === 'idle' && !audioUrl && !session?.audio_url && (
+                    <Button onClick={handleStartRecording} size="lg" className="gap-2">
+                      <Mic className="w-5 h-5" /> Start Recording
+                    </Button>
+                  )}
+                  
+                  {recordingState === 'recording' && (
+                    <>
+                      <Button onClick={handlePauseRecording} variant="outline" size="lg" className="gap-2">
+                        <Pause className="w-5 h-5" /> Pause
+                      </Button>
+                      <Button onClick={handleStopRecording} variant="destructive" size="lg" className="gap-2">
+                        <Square className="w-5 h-5" /> Stop
+                      </Button>
+                    </>
+                  )}
+
+                  {recordingState === 'paused' && (
+                    <>
+                      <Button onClick={handleResumeRecording} variant="outline" size="lg" className="gap-2">
+                        <Play className="w-5 h-5" /> Resume
+                      </Button>
+                      <Button onClick={handleStopRecording} variant="destructive" size="lg" className="gap-2">
+                        <Square className="w-5 h-5" /> Stop
+                      </Button>
+                    </>
                   )}
                 </div>
               </div>
 
-              {/* Duration display when stopped */}
-              {audioUrl && recordingState === 'stopped' && (
-                <p className="text-sm text-muted-foreground">
-                  Recording duration: {formatDuration(duration)}
-                </p>
+              {/* Regenerate from existing audio */}
+              {session?.audio_url && recordingState === 'idle' && !audioUrl && processingStep === 'idle' && (
+                <div className="space-y-4 pt-4 border-t border-border">
+                  <p className="text-sm text-muted-foreground text-center">
+                    This session has existing audio. You can regenerate feedback or record new audio.
+                  </p>
+                  <div className="flex gap-3 justify-center">
+                    <Button onClick={handleStartRecording} variant="outline" className="gap-2">
+                      <Mic className="w-4 h-4" /> Record New
+                    </Button>
+                    <Button onClick={regenerateFeedback} className="gap-2">
+                      <RefreshCw className="w-4 h-4" /> Regenerate Feedback
+                    </Button>
+                  </div>
+                </div>
               )}
 
-              {/* Controls */}
-              <div className="flex gap-3">
-                {recordingState === 'idle' && !audioUrl && !session?.audio_url && (
-                  <Button onClick={handleStartRecording} size="lg" className="gap-2">
-                    <Mic className="w-5 h-5" /> Start Recording
-                  </Button>
-                )}
-                
-                {recordingState === 'recording' && (
-                  <>
-                    <Button onClick={handlePauseRecording} variant="outline" size="lg" className="gap-2">
-                      <Pause className="w-5 h-5" /> Pause
+              {/* Audio Preview */}
+              {audioUrl && recordingState === 'stopped' && processingStep === 'idle' && (
+                <div className="space-y-4 pt-4 border-t border-border">
+                  <audio controls src={audioUrl} className="w-full" />
+                  
+                  <div className="flex gap-3 justify-center">
+                    <Button variant="outline" onClick={resetRecording}>
+                      Re-record
                     </Button>
-                    <Button onClick={handleStopRecording} variant="destructive" size="lg" className="gap-2">
-                      <Square className="w-5 h-5" /> Stop
+                    <Button onClick={uploadAndProcess} className="gap-2">
+                      <Upload className="w-4 h-4" /> Upload & Process
                     </Button>
-                  </>
-                )}
-
-                {recordingState === 'paused' && (
-                  <>
-                    <Button onClick={handleResumeRecording} variant="outline" size="lg" className="gap-2">
-                      <Play className="w-5 h-5" /> Resume
-                    </Button>
-                    <Button onClick={handleStopRecording} variant="destructive" size="lg" className="gap-2">
-                      <Square className="w-5 h-5" /> Stop
-                    </Button>
-                  </>
-                )}
-              </div>
-            </div>
-
-            {/* Regenerate from existing audio */}
-            {session?.audio_url && recordingState === 'idle' && !audioUrl && processingStep === 'idle' && (
-              <div className="space-y-4 pt-4 border-t border-border">
-                <p className="text-sm text-muted-foreground text-center">
-                  This session has existing audio. You can regenerate feedback or record new audio.
-                </p>
-                <div className="flex gap-3 justify-center">
-                  <Button onClick={handleStartRecording} variant="outline" className="gap-2">
-                    <Mic className="w-4 h-4" /> Record New
-                  </Button>
-                  <Button onClick={regenerateFeedback} className="gap-2">
-                    <RefreshCw className="w-4 h-4" /> Regenerate Feedback
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {/* Audio Preview */}
-            {audioUrl && recordingState === 'stopped' && processingStep === 'idle' && (
-              <div className="space-y-4 pt-4 border-t border-border">
-                <audio controls src={audioUrl} className="w-full" />
-                
-                <div className="flex gap-3 justify-center">
-                  <Button variant="outline" onClick={resetRecording}>
-                    Re-record
-                  </Button>
-                  <Button onClick={uploadAndProcess} className="gap-2">
-                    <Upload className="w-4 h-4" /> Upload & Process
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {/* Processing States */}
-            {processingStep !== 'idle' && processingStep !== 'complete' && (
-              <div className="space-y-4 pt-4 border-t border-border">
-                {/* Upload Progress */}
-                {processingStep === 'uploading' && (
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Uploading audio...</span>
-                      <span className="font-mono">{uploadProgress}%</span>
-                    </div>
-                    <Progress value={uploadProgress} className="h-2" />
                   </div>
-                )}
-
-                {/* Transcription */}
-                {processingStep === 'transcribing' && (
-                  <div className="flex items-center gap-3 text-muted-foreground">
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    <span>Transcribing audio...</span>
-                  </div>
-                )}
-
-                {/* Generating Feedback */}
-                {processingStep === 'generating' && (
-                  <div className="flex items-center gap-3 text-muted-foreground">
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    <span>Generating AI feedback...</span>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Completion State */}
-            {processingStep === 'complete' && (
-              <div className="space-y-4 pt-4 border-t border-border">
-                <div className="flex items-center gap-3 text-primary">
-                  <CheckCircle className="w-5 h-5" />
-                  <span className="font-medium">Processing complete!</span>
                 </div>
-                
-                <Button 
-                  onClick={() => navigate(`/feedback/${sessionId}`)} 
-                  className="w-full"
-                >
-                  View & Edit Feedback Draft
-                </Button>
-              </div>
-            )}
+              )}
 
-            {/* Transcript Preview */}
-            {transcript && (
-              <div className="space-y-2 pt-4 border-t border-border">
-                <h4 className="font-medium text-foreground">Transcript Preview</h4>
-                <div className="bg-muted/50 rounded-lg p-4 max-h-48 overflow-y-auto">
-                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                    {transcript}
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* Instructions */}
-            {processingStep === 'idle' && !audioUrl && (
-              <div className="space-y-4 text-sm text-muted-foreground text-center">
-                <p>Speak naturally about the employee's performance.</p>
-                <p>EvalifyAI will transcribe and generate structured feedback.</p>
-              </div>
-            )}
-
-            {/* Feedback Questions Guide */}
-            {processingStep === 'idle' && questions.length > 0 && (
-              <Card className="border-primary/20 bg-primary/5">
-                <CardHeader className="pb-2">
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <HelpCircle className="w-5 h-5 text-primary" />
-                    Questions to Address
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <p className="text-sm text-muted-foreground">
-                    Please speak on each of these topics during your recording:
-                  </p>
-                  <div className="space-y-2">
-                    {questions.map((q, index) => (
-                      <div key={q.id} className="flex items-start gap-3 p-2 rounded bg-background/50">
-                        <Badge variant="outline" className="shrink-0 mt-0.5">
-                          {index + 1}
-                        </Badge>
-                        <div>
-                          <p className="text-sm font-medium">{q.question_text}</p>
-                          <p className="text-xs text-muted-foreground">{q.category}</p>
-                        </div>
+              {/* Processing States */}
+              {processingStep !== 'idle' && processingStep !== 'complete' && (
+                <div className="space-y-4 pt-4 border-t border-border">
+                  {/* Upload Progress */}
+                  {processingStep === 'uploading' && (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Uploading audio...</span>
+                        <span className="font-mono">{uploadProgress}%</span>
                       </div>
-                    ))}
+                      <Progress value={uploadProgress} className="h-2" />
+                    </div>
+                  )}
+
+                  {/* Transcription */}
+                  {processingStep === 'transcribing' && (
+                    <div className="flex items-center gap-3 text-muted-foreground">
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <span>Transcribing audio...</span>
+                    </div>
+                  )}
+
+                  {/* Generating Feedback */}
+                  {processingStep === 'generating' && (
+                    <div className="flex items-center gap-3 text-muted-foreground">
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <span>Generating AI feedback...</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Completion State */}
+              {processingStep === 'complete' && (
+                <div className="space-y-4 pt-4 border-t border-border">
+                  <div className="flex items-center gap-3 text-primary">
+                    <CheckCircle className="w-5 h-5" />
+                    <span className="font-medium">Processing complete!</span>
                   </div>
-                </CardContent>
-              </Card>
-            )}
-          </CardContent>
-        </Card>
+                  
+                  <Button 
+                    onClick={() => navigate(`/feedback/${sessionId}`)} 
+                    className="w-full"
+                  >
+                    View & Edit Feedback Draft
+                  </Button>
+                </div>
+              )}
+
+              {/* Transcript Preview */}
+              {transcript && (
+                <div className="space-y-2 pt-4 border-t border-border">
+                  <h4 className="font-medium text-foreground">Transcript Preview</h4>
+                  <div className="bg-muted/50 rounded-lg p-4 max-h-48 overflow-y-auto">
+                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                      {transcript}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Instructions */}
+              {processingStep === 'idle' && !audioUrl && (
+                <div className="space-y-4 text-sm text-muted-foreground text-center">
+                  <p>Speak naturally about the employee's performance.</p>
+                  <p>EvalifyAI will transcribe and generate structured feedback.</p>
+                </div>
+              )}
+
+              {/* Feedback Questions Guide */}
+              {processingStep === 'idle' && questions.length > 0 && (
+                <Card className="border-primary/20 bg-primary/5">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <HelpCircle className="w-5 h-5 text-primary" />
+                      Questions to Address
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <p className="text-sm text-muted-foreground">
+                      Please speak on each of these topics during your recording:
+                    </p>
+                    <div className="space-y-2">
+                      {questions.map((q, index) => (
+                        <div key={q.id} className="flex items-start gap-3 p-2 rounded bg-background/50">
+                          <Badge variant="outline" className="shrink-0 mt-0.5">
+                            {index + 1}
+                          </Badge>
+                          <div>
+                            <p className="text-sm font-medium">{q.question_text}</p>
+                            <p className="text-xs text-muted-foreground">{q.category}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </CardContent>
+          </Card>
+        )}
       </div>
     </DashboardLayout>
   );
