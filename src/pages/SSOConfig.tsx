@@ -113,15 +113,16 @@ const SSOConfig = () => {
           } else if (typedConfig.provider === 'saml') {
             setSamlEnabled(typedConfig.is_enabled);
             if (typedConfig.configuration) {
+              const attrMap = typedConfig.configuration.attributeMapping;
               setSamlConfig({
                 idpUrl: typedConfig.configuration.idpUrl || '',
                 entityId: typedConfig.configuration.entityId || '',
                 certificate: typedConfig.configuration.certificate || '',
-                attributeMapping: typedConfig.configuration.attributeMapping || {
-                  email: 'email',
-                  firstName: 'firstName',
-                  lastName: 'lastName',
-                  groups: 'groups'
+                attributeMapping: {
+                  email: attrMap?.email || 'email',
+                  firstName: attrMap?.firstName || 'firstName',
+                  lastName: attrMap?.lastName || 'lastName',
+                  groups: attrMap?.groups || 'groups'
                 }
               });
             }
