@@ -22,6 +22,8 @@ import HRAnalytics from "./pages/HRAnalytics";
 import QuestionTemplates from "./pages/QuestionTemplates";
 import ImportUsers from "./pages/ImportUsers";
 import SSOConfig from "./pages/SSOConfig";
+import Notifications from "./pages/Notifications";
+import NotificationSettings from "./pages/NotificationSettings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -76,6 +78,8 @@ const AppRoutes = () => (
     <Route path="/quick-feedback" element={<ProtectedRoute><QuickFeedback /></ProtectedRoute>} />
     <Route path="/goals" element={<ProtectedRoute><Goals /></ProtectedRoute>} />
     <Route path="/hr-analytics" element={<ProtectedRoute><HRAnalytics /></ProtectedRoute>} />
+    <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+    <Route path="/settings/notifications" element={<ProtectedRoute><NotificationSettings /></ProtectedRoute>} />
     <Route path="*" element={<NotFound />} />
   </Routes>
 );

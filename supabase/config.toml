@@ -11,3 +11,12 @@ verify_jwt = false
 
 [functions.compute-analytics]
 verify_jwt = false
+
+[functions.bulk-import-users]
+verify_jwt = false
+
+[functions.sync-sso-users]
+verify_jwt = true
+
+[functions.send-notification]
+verify_jwt = false
