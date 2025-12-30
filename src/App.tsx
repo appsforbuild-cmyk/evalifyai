@@ -20,6 +20,8 @@ import QuickFeedback from "./pages/QuickFeedback";
 import Goals from "./pages/Goals";
 import HRAnalytics from "./pages/HRAnalytics";
 import QuestionTemplates from "./pages/QuestionTemplates";
+import ImportUsers from "./pages/ImportUsers";
+import SSOConfig from "./pages/SSOConfig";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -61,6 +63,8 @@ const AppRoutes = () => (
     <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
     <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
     <Route path="/admin/question-templates" element={<ProtectedRoute><QuestionTemplates /></ProtectedRoute>} />
+    <Route path="/admin/import-users" element={<ProtectedRoute><ImportUsers /></ProtectedRoute>} />
+    <Route path="/admin/sso-config" element={<ProtectedRoute><SSOConfig /></ProtectedRoute>} />
     <Route path="/manager" element={<ProtectedRoute><ManagerDashboard /></ProtectedRoute>} />
     <Route path="/employee" element={<ProtectedRoute><EmployeeDashboard /></ProtectedRoute>} />
     <Route path="/hr" element={<ProtectedRoute><HRDashboard /></ProtectedRoute>} />
