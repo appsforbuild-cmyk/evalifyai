@@ -1,17 +1,24 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { Mic, Square, Pause, Play, Upload, Loader2, FileAudio, CheckCircle, HelpCircle, RefreshCw } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Mic, Square, Pause, Play, Upload, Loader2, FileAudio, CheckCircle, HelpCircle, RefreshCw, ListChecks } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAudioRecorder } from '@/hooks/useAudioRecorder';
+import PerQuestionRecorder from '@/components/voice/PerQuestionRecorder';
+import { QuestionRecording } from '@/types/voiceSession';
+import { TemplateQuestion } from '@/types/questionTemplate';
 
 type ProcessingStep = 'idle' | 'uploading' | 'transcribing' | 'generating' | 'complete';
+type RecordingMode = 'full' | 'per_question';
 
 interface FeedbackQuestion {
   id: string;
@@ -29,6 +36,9 @@ const VoiceSession = () => {
   const [processingStep, setProcessingStep] = useState<ProcessingStep>('idle');
   const [transcript, setTranscript] = useState<string>('');
   const [questions, setQuestions] = useState<FeedbackQuestion[]>([]);
+  const [recordingMode, setRecordingMode] = useState<RecordingMode>('full');
+  const [templateQuestions, setTemplateQuestions] = useState<TemplateQuestion[]>([]);
+  const [questionRecordings, setQuestionRecordings] = useState<QuestionRecording[]>([]);
 
   const {
     state: recordingState,
@@ -66,10 +76,18 @@ const VoiceSession = () => {
       if (data.status === 'draft') {
         setProcessingStep('complete');
       }
+      // Restore recording mode and question recordings if resuming
+      if (data.recording_mode === 'full' || data.recording_mode === 'per_question') {
+        setRecordingMode(data.recording_mode);
+      }
+      if (data.question_recordings && Array.isArray(data.question_recordings)) {
+        setQuestionRecordings(data.question_recordings as unknown as QuestionRecording[]);
+      }
     }
   };
 
   const fetchQuestions = async () => {
+    // Fetch from both feedback_questions and template questions
     const { data } = await supabase
       .from('feedback_questions')
       .select('id, question_text, category, display_order')
@@ -78,7 +96,54 @@ const VoiceSession = () => {
 
     if (data) {
       setQuestions(data);
+      // Convert to TemplateQuestion format for PerQuestionRecorder
+      setTemplateQuestions(data.map(q => ({
+        id: q.id,
+        text: q.question_text,
+        type: 'text' as const,
+        required: true,
+        voiceEnabled: true,
+      })));
     }
+  };
+
+  const handleModeChange = async (checked: boolean) => {
+    const newMode: RecordingMode = checked ? 'per_question' : 'full';
+    setRecordingMode(newMode);
+    
+    await supabase
+      .from('voice_sessions')
+      .update({ recording_mode: newMode })
+      .eq('id', sessionId);
+  };
+
+  const handlePerQuestionComplete = async (recordings: QuestionRecording[]) => {
+    setQuestionRecordings(recordings);
+    setProcessingStep('transcribing');
+    toast.info('Processing recordings...');
+
+    // Call process-session with per-question mode
+    const { data, error } = await supabase.functions.invoke('process-session', {
+      body: { 
+        sessionId, 
+        recordingMode: 'per_question',
+        questionRecordings: recordings,
+        tone: 'neutral'
+      }
+    });
+
+    if (error) {
+      console.error('Processing error:', error);
+      toast.error('Processing failed');
+      setProcessingStep('idle');
+      return;
+    }
+
+    setProcessingStep('complete');
+    if (data?.transcript) {
+      setTranscript(data.transcript);
+    }
+    toast.success('Processing complete!');
   };
 
   const formatDuration = (seconds: number) => {
@@ -264,7 +329,46 @@ const VoiceSession = () => {
           <p className="text-muted-foreground mt-1">{session.description}</p>
         </div>
 
-        {/* Recording Card */}
+        {/* Recording Mode Toggle */}
+        {processingStep === 'idle' && !audioUrl && !session?.audio_url && (
+          <Card className="border-border">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <Label htmlFor="mode-toggle" className="font-medium">Recording Mode</Label>
+                  <p className="text-sm text-muted-foreground">
+                    {recordingMode === 'per_question' 
+                      ? 'Record separate answers for each question' 
+                      : 'Record one continuous session'}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">Full</span>
+                  <Switch
+                    id="mode-toggle"
+                    checked={recordingMode === 'per_question'}
+                    onCheckedChange={handleModeChange}
+                  />
+                  <span className="text-sm text-muted-foreground flex items-center gap-1">
+                    <ListChecks className="w-4 h-4" /> Per Question
+                  </span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Per-Question Recorder */}
+        {recordingMode === 'per_question' && templateQuestions.length > 0 && processingStep !== 'complete' ? (
+          <PerQuestionRecorder
+            sessionId={sessionId!}
+            questions={templateQuestions}
+            initialRecordings={questionRecordings}
+            initialQuestionIndex={session?.current_question_index || 0}
+            onComplete={handlePerQuestionComplete}
+          />
+        ) : (
+        /* Full Session Recording Card */
         <Card className="border-border">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">

@@ -433,10 +433,14 @@ export type Database = {
         Row: {
           audio_url: string | null
           created_at: string | null
+          current_question_index: number | null
           description: string | null
           employee_id: string
           id: string
+          is_complete: boolean | null
           manager_id: string
+          question_recordings: Json | null
+          recording_mode: string | null
           status: string | null
           title: string
           transcript: string | null
@@ -445,10 +449,14 @@ export type Database = {
         Insert: {
           audio_url?: string | null
           created_at?: string | null
+          current_question_index?: number | null
           description?: string | null
           employee_id: string
           id?: string
+          is_complete?: boolean | null
           manager_id: string
+          question_recordings?: Json | null
+          recording_mode?: string | null
           status?: string | null
           title: string
           transcript?: string | null
@@ -457,10 +465,14 @@ export type Database = {
         Update: {
           audio_url?: string | null
           created_at?: string | null
+          current_question_index?: number | null
           description?: string | null
           employee_id?: string
           id?: string
+          is_complete?: boolean | null
           manager_id?: string
+          question_recordings?: Json | null
+          recording_mode?: string | null
           status?: string | null
           title?: string
           transcript?: string | null

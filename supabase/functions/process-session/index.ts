@@ -350,9 +350,9 @@ serve(async (req) => {
       );
     }
 
-    const { sessionId, audioBase64, tone } = validation.data;
+    const { sessionId, audioBase64, tone, recordingMode, questionRecordings } = validation.data;
 
-    console.log(`Processing session: ${sessionId}`);
+    console.log(`Processing session: ${sessionId}, mode: ${recordingMode}`);
 
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
     const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
@@ -402,12 +402,67 @@ serve(async (req) => {
 
     console.log('Session found:', session.title);
 
-    // 2. Transcribe audio using OpenAI Whisper
+    // 2. Transcribe audio based on recording mode
     let transcript = '';
     let sttResponse = null;
+    let perQuestionTranscripts: { questionId: string; questionText: string; transcript: string }[] = [];
 
-    if (openaiApiKey && audioBase64) {
-      // Use OpenAI Whisper for real transcription
+    if (recordingMode === 'per_question' && questionRecordings && questionRecordings.length > 0) {
+      // Per-question mode: transcribe each recording and combine with context
+      console.log(`Processing ${questionRecordings.length} question recordings...`);
+      
+      for (const recording of questionRecordings) {
+        if (recording.audioPath) {
+          try {
+            // Download audio from storage
+            const { data: audioData, error: downloadError } = await supabase.storage
+              .from('voice-recordings')
+              .download(recording.audioPath);
+            
+            if (downloadError || !audioData) {
+              console.error(`Failed to download audio for question ${recording.questionId}:`, downloadError);
+              continue;
+            }
+            
+            // Convert to base64
+            const arrayBuffer = await audioData.arrayBuffer();
+            const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+            
+            // Transcribe using OpenAI
+            if (openaiApiKey) {
+              const result = await transcribeAudio(base64, openaiApiKey);
+              perQuestionTranscripts.push({
+                questionId: recording.questionId,
+                questionText: recording.questionText,
+                transcript: result.transcript
+              });
+            }
+          } catch (err) {
+            console.error(`Error transcribing question ${recording.questionId}:`, err);
+          }
+        }
+      }
+      
+      // Build structured transcript with Q&A format
+      transcript = perQuestionTranscripts.map((qt, i) => 
+        `Question ${i + 1}: ${qt.questionText}\nAnswer: ${qt.transcript}`
+      ).join('\n\n');
+      
+      // Update question_recordings with transcripts
+      const updatedRecordings = questionRecordings.map(r => {
+        const found = perQuestionTranscripts.find(t => t.questionId === r.questionId);
+        return found ? { ...r, transcript: found.transcript } : r;
+      });
+      
+      await supabase
+        .from('voice_sessions')
+        .update({ 
+          question_recordings: JSON.parse(JSON.stringify(updatedRecordings))
+        })
+        .eq('id', sessionId);
+        
+    } else if (openaiApiKey && audioBase64) {
+      // Full session mode: Use OpenAI Whisper for real transcription
       try {
         const result = await transcribeAudio(audioBase64, openaiApiKey);
         transcript = result.transcript;

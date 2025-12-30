@@ -20,6 +20,16 @@ export const createVoiceSessionSchema = z.object({
     .regex(uuidRegex, 'Invalid employee ID format'),
 });
 
+// Question Recording schema for per-question mode
+const questionRecordingSchema = z.object({
+  questionId: z.string(),
+  questionText: z.string(),
+  audioPath: z.string().nullable(),
+  transcript: z.string().nullable(),
+  duration: z.number(),
+  recordedAt: z.string().nullable(),
+});
+
 // Process Session validation
 export const processSessionSchema = z.object({
   sessionId: z
@@ -33,6 +43,13 @@ export const processSessionSchema = z.object({
   tone: z
     .enum(['appreciative', 'developmental', 'neutral'])
     .default('neutral'),
+  recordingMode: z
+    .enum(['full', 'per_question'])
+    .default('full'),
+  questionRecordings: z
+    .array(questionRecordingSchema)
+    .optional()
+    .nullable(),
 });
 
 // Send Feedback Notification validation
