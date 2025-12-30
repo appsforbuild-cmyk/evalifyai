@@ -1,18 +1,12 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Resend } from "https://esm.sh/resend@2.0.0";
+import { sendNotificationSchema, validateRequestBody } from "../_shared/validation.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
-
-interface NotificationRequest {
-  feedbackId: string;
-  employeeId: string;
-  sessionTitle: string;
-  managerName?: string;
-}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -50,6 +44,18 @@ serve(async (req) => {
 
     console.log(`Authenticated user: ${user.id}`);
 
+    // Validate request body with Zod
+    const validation = await validateRequestBody(req, sendNotificationSchema);
+    if (!validation.success) {
+      console.error('Validation error:', validation.error);
+      return new Response(
+        JSON.stringify({ error: validation.error }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const { feedbackId, employeeId, sessionTitle, managerName } = validation.data;
+
     if (!resendApiKey) {
       console.log("RESEND_API_KEY not configured, skipping email notification");
       return new Response(
@@ -57,8 +63,6 @@ serve(async (req) => {
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-
-    const { feedbackId, employeeId, sessionTitle, managerName }: NotificationRequest = await req.json();
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
