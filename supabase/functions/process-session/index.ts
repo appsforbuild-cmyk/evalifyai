@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { FEEDBACK_PROMPT_TEMPLATE, FAIRNESS_CHECK_TEMPLATE, FAIRNESS_REWRITE_TEMPLATE } from "../_shared/promptTemplates.ts";
+import { processSessionSchema, validateRequestBody } from "../_shared/validation.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -339,11 +340,17 @@ serve(async (req) => {
 
     console.log(`Authenticated user: ${user.id}`);
 
-    const { sessionId, audioBase64, tone = 'neutral' } = await req.json();
-    
-    if (!sessionId) {
-      throw new Error('Session ID is required');
+    // Validate request body with Zod
+    const validation = await validateRequestBody(req, processSessionSchema);
+    if (!validation.success) {
+      console.error('Validation error:', validation.error);
+      return new Response(
+        JSON.stringify({ error: validation.error }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
+
+    const { sessionId, audioBase64, tone } = validation.data;
 
     console.log(`Processing session: ${sessionId}`);
 
