@@ -263,6 +263,12 @@ const AdminDashboard = () => {
             </TabsTrigger>
           </TabsList>
 
+          <div className="flex justify-end">
+            <Button variant="outline" onClick={() => navigate('/admin/question-templates')} className="gap-2">
+              <MessageSquare className="w-4 h-4" /> Manage Question Templates
+            </Button>
+          </div>
+
           {/* User Management Tab */}
           <TabsContent value="users">
             <Card>
