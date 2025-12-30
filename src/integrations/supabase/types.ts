@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_api_keys: {
+        Row: {
+          created_at: string
+          created_by: string
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          key_hash: string
+          key_prefix: string
+          last_used_at: string | null
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          key_hash: string
+          key_prefix: string
+          last_used_at?: string | null
+          name: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          key_hash?: string
+          key_prefix?: string
+          last_used_at?: string | null
+          name?: string
+        }
+        Relationships: []
+      }
       analytics_feedback_aggregate: {
         Row: {
           avg_fairness: number | null
@@ -405,6 +441,39 @@ export type Database = {
           feedback_type?: string | null
           id?: string
           transcript?: string | null
+        }
+        Relationships: []
+      }
+      user_import_history: {
+        Row: {
+          created_at: string
+          error_count: number
+          error_details: Json | null
+          id: string
+          imported_by: string
+          method: string
+          success_count: number
+          total_count: number
+        }
+        Insert: {
+          created_at?: string
+          error_count?: number
+          error_details?: Json | null
+          id?: string
+          imported_by: string
+          method: string
+          success_count?: number
+          total_count?: number
+        }
+        Update: {
+          created_at?: string
+          error_count?: number
+          error_details?: Json | null
+          id?: string
+          imported_by?: string
+          method?: string
+          success_count?: number
+          total_count?: number
         }
         Relationships: []
       }
