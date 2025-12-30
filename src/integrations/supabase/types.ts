@@ -92,6 +92,66 @@ export type Database = {
         }
         Relationships: []
       }
+      bias_audit_log: {
+        Row: {
+          bias_score: number
+          content_type: string
+          context: string | null
+          created_at: string
+          id: string
+          issues: Json | null
+          original_text: string
+          suggestions_applied: Json | null
+          user_id: string
+        }
+        Insert: {
+          bias_score: number
+          content_type: string
+          context?: string | null
+          created_at?: string
+          id?: string
+          issues?: Json | null
+          original_text: string
+          suggestions_applied?: Json | null
+          user_id: string
+        }
+        Update: {
+          bias_score?: number
+          content_type?: string
+          context?: string | null
+          created_at?: string
+          id?: string
+          issues?: Json | null
+          original_text?: string
+          suggestions_applied?: Json | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      bias_training_completions: {
+        Row: {
+          completed_at: string
+          id: string
+          module_type: string
+          quiz_score: number | null
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string
+          id?: string
+          module_type: string
+          quiz_score?: number | null
+          user_id: string
+        }
+        Update: {
+          completed_at?: string
+          id?: string
+          module_type?: string
+          quiz_score?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       employees_directory: {
         Row: {
           created_at: string
@@ -444,6 +504,39 @@ export type Database = {
           title?: string
           type?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      organization_bias_benchmarks: {
+        Row: {
+          avg_bias_score: number | null
+          bias_type_breakdown: Json | null
+          computed_at: string
+          department_scores: Json | null
+          id: string
+          period_end: string
+          period_start: string
+          total_feedbacks: number | null
+        }
+        Insert: {
+          avg_bias_score?: number | null
+          bias_type_breakdown?: Json | null
+          computed_at?: string
+          department_scores?: Json | null
+          id?: string
+          period_end: string
+          period_start: string
+          total_feedbacks?: number | null
+        }
+        Update: {
+          avg_bias_score?: number | null
+          bias_type_breakdown?: Json | null
+          computed_at?: string
+          department_scores?: Json | null
+          id?: string
+          period_end?: string
+          period_start?: string
+          total_feedbacks?: number | null
         }
         Relationships: []
       }
