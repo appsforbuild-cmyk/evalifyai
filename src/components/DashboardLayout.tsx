@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { LogOut, LayoutDashboard, Users, Mic, BarChart3, Shield, MessageSquare, Target, TrendingUp } from 'lucide-react';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
 import logo from '@/assets/evalifyai-logo.png';
 
 interface DashboardLayoutProps {
@@ -61,7 +62,8 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             ))}
           </nav>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            <NotificationBell />
             <span className="text-sm text-muted-foreground hidden sm:block">
               {user?.email}
             </span>
