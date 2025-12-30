@@ -24,6 +24,7 @@ import ImportUsers from "./pages/ImportUsers";
 import SSOConfig from "./pages/SSOConfig";
 import Notifications from "./pages/Notifications";
 import NotificationSettings from "./pages/NotificationSettings";
+import BiasAnalytics from "./pages/BiasAnalytics";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -80,6 +81,7 @@ const AppRoutes = () => (
     <Route path="/hr-analytics" element={<ProtectedRoute><HRAnalytics /></ProtectedRoute>} />
     <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
     <Route path="/settings/notifications" element={<ProtectedRoute><NotificationSettings /></ProtectedRoute>} />
+    <Route path="/admin/bias-analytics" element={<ProtectedRoute><BiasAnalytics /></ProtectedRoute>} />
     <Route path="*" element={<NotFound />} />
   </Routes>
 );
