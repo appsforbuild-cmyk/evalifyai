@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,6 +14,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import DashboardLayout from '@/components/DashboardLayout';
+import TemplateSelector from '@/components/templates/TemplateSelector';
+import { TemplateQuestion } from '@/types/questionTemplate';
 
 interface VoiceSession {
   id: string;
@@ -39,6 +41,10 @@ const ManagerDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [newSession, setNewSession] = useState({ title: '', description: '', employeeId: '' });
+  const [selectedQuestions, setSelectedQuestions] = useState<TemplateQuestion[]>([]);
+  const handleQuestionsSelected = useCallback((questions: TemplateQuestion[]) => {
+    setSelectedQuestions(questions);
+  }, []);
   const { user } = useAuth();
   const navigate = useNavigate();
 
@@ -202,6 +208,10 @@ const ManagerDashboard = () => {
                       value={newSession.description}
                       onChange={(e) => setNewSession({ ...newSession, description: e.target.value })}
                     />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Question Template</Label>
+                    <TemplateSelector onQuestionsSelected={handleQuestionsSelected} />
                   </div>
                   <Button onClick={createSession} className="w-full">
                     Create & Start Recording
