@@ -6,10 +6,12 @@ import { Progress } from '@/components/ui/progress';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { FileText, TrendingUp, Calendar, Star, Target, BookOpen, Check, User, BarChart3, MessageSquare } from 'lucide-react';
+import { FileText, TrendingUp, Calendar, Star, Target, BookOpen, Check, User, BarChart3, MessageSquare, Heart, Trophy } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import DashboardLayout from '@/components/DashboardLayout';
+import { AchievementProgress } from '@/components/gamification/AchievementProgress';
+import { PointsDisplay } from '@/components/gamification/PointsDisplay';
 import { toast } from 'sonner';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
 
@@ -164,6 +166,12 @@ const EmployeeDashboard = () => {
             <p className="text-muted-foreground">Track your performance, feedback, and growth journey</p>
           </div>
           <div className="flex gap-2">
+            <Button variant="outline" onClick={() => navigate('/recognition')} className="gap-2">
+              <Heart className="w-4 h-4" /> Recognition
+            </Button>
+            <Button variant="outline" onClick={() => navigate('/leaderboards')} className="gap-2">
+              <Trophy className="w-4 h-4" /> Leaderboards
+            </Button>
             <Button variant="outline" onClick={() => navigate('/quick-feedback')} className="gap-2">
               <MessageSquare className="w-4 h-4" /> Quick Feedback
             </Button>
@@ -229,7 +237,13 @@ const EmployeeDashboard = () => {
               </Card>
             </div>
 
-            <div className="grid lg:grid-cols-2 gap-6">
+            <div className="grid lg:grid-cols-3 gap-6">
+              {/* Points Display */}
+              <PointsDisplay />
+              
+              {/* Achievement Progress */}
+              <AchievementProgress />
+              
               {/* Growth Roadmap */}
               <Card>
                 <CardHeader>

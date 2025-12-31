@@ -1,11 +1,14 @@
 import { Toaster } from "@/components/ui/toaster";
 import RetentionAlerts from "./pages/RetentionAlerts";
 import AttritionOverview from "./pages/AttritionOverview";
+import Recognition from "./pages/Recognition";
+import Leaderboards from "./pages/Leaderboards";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { GamificationProvider } from "@/components/gamification/GamificationProvider";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
@@ -86,6 +89,8 @@ const AppRoutes = () => (
     <Route path="/admin/bias-analytics" element={<ProtectedRoute><BiasAnalytics /></ProtectedRoute>} />
     <Route path="/manager/retention-alerts" element={<ProtectedRoute><RetentionAlerts /></ProtectedRoute>} />
     <Route path="/hr/attrition-overview" element={<ProtectedRoute><AttritionOverview /></ProtectedRoute>} />
+    <Route path="/recognition" element={<ProtectedRoute><Recognition /></ProtectedRoute>} />
+    <Route path="/leaderboards" element={<ProtectedRoute><Leaderboards /></ProtectedRoute>} />
     <Route path="*" element={<NotFound />} />
   </Routes>
 );
@@ -97,7 +102,9 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <AppRoutes />
+          <GamificationProvider>
+            <AppRoutes />
+          </GamificationProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
