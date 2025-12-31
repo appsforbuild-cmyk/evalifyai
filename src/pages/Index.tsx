@@ -8,6 +8,7 @@ import WhyEvalifyAI from "@/components/WhyEvalifyAI";
 import FutureVision from "@/components/FutureVision";
 import Waitlist from "@/components/Waitlist";
 import Footer from "@/components/Footer";
+import { TestimonialsSection, PricingPreviewSection, FAQSection, CTASection } from "@/components/landing/LandingSections";
 
 const Index = () => {
   return (
@@ -29,6 +30,10 @@ const Index = () => {
         <KeyFeatures />
       </div>
       <WhyEvalifyAI />
+      <TestimonialsSection />
+      <PricingPreviewSection />
+      <FAQSection />
+      <CTASection />
       <FutureVision />
       <div id="waitlist">
         <Waitlist />
