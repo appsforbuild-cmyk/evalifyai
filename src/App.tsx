@@ -40,6 +40,9 @@ import Pricing from "./pages/Pricing";
 import Onboarding from "./pages/Onboarding";
 import InviteAccept from "./pages/InviteAccept";
 import BrandingSettings from "./pages/BrandingSettings";
+import BrandingPreview from "./pages/BrandingPreview";
+import BrandAssets from "./pages/BrandAssets";
+import BrandedLogin from "./pages/BrandedLogin";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -102,6 +105,9 @@ const AppRoutes = () => (
     <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
     <Route path="/settings/notifications" element={<ProtectedRoute><NotificationSettings /></ProtectedRoute>} />
     <Route path="/settings/branding" element={<ProtectedRoute><BrandingSettings /></ProtectedRoute>} />
+    <Route path="/settings/branding/preview" element={<ProtectedRoute><BrandingPreview /></ProtectedRoute>} />
+    <Route path="/settings/brand-assets" element={<ProtectedRoute><BrandAssets /></ProtectedRoute>} />
+    <Route path="/login/:orgSlug" element={<BrandedLogin />} />
     <Route path="/admin/bias-analytics" element={<ProtectedRoute><BiasAnalytics /></ProtectedRoute>} />
     <Route path="/manager/retention-alerts" element={<ProtectedRoute><RetentionAlerts /></ProtectedRoute>} />
     <Route path="/hr/attrition-overview" element={<ProtectedRoute><AttritionOverview /></ProtectedRoute>} />
