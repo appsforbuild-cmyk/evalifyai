@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.analyze-bias]
 verify_jwt = false
+
+[functions.calculate-attrition-risk]
+verify_jwt = false

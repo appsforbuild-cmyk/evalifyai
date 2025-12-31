@@ -1,4 +1,6 @@
 import { Toaster } from "@/components/ui/toaster";
+import RetentionAlerts from "./pages/RetentionAlerts";
+import AttritionOverview from "./pages/AttritionOverview";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -82,6 +84,8 @@ const AppRoutes = () => (
     <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
     <Route path="/settings/notifications" element={<ProtectedRoute><NotificationSettings /></ProtectedRoute>} />
     <Route path="/admin/bias-analytics" element={<ProtectedRoute><BiasAnalytics /></ProtectedRoute>} />
+    <Route path="/manager/retention-alerts" element={<ProtectedRoute><RetentionAlerts /></ProtectedRoute>} />
+    <Route path="/hr/attrition-overview" element={<ProtectedRoute><AttritionOverview /></ProtectedRoute>} />
     <Route path="*" element={<NotFound />} />
   </Routes>
 );
