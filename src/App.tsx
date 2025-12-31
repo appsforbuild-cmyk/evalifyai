@@ -36,6 +36,8 @@ import ScheduledReports from "./pages/ScheduledReports";
 import OnboardingOrganization from "./pages/OnboardingOrganization";
 import SignupOrganization from "./pages/SignupOrganization";
 import Pricing from "./pages/Pricing";
+import Onboarding from "./pages/Onboarding";
+import InviteAccept from "./pages/InviteAccept";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -77,6 +79,8 @@ const AppRoutes = () => (
     <Route path="/pricing" element={<Pricing />} />
     <Route path="/signup/organization" element={<SignupOrganization />} />
     <Route path="/onboarding/organization" element={<ProtectedRoute><OnboardingOrganization /></ProtectedRoute>} />
+    <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
+    <Route path="/invite/:token" element={<InviteAccept />} />
     <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
     <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
     <Route path="/admin/question-templates" element={<ProtectedRoute><QuestionTemplates /></ProtectedRoute>} />
