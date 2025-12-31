@@ -34,6 +34,8 @@ import BiasAnalytics from "./pages/BiasAnalytics";
 import Analytics from "./pages/Analytics";
 import ScheduledReports from "./pages/ScheduledReports";
 import OnboardingOrganization from "./pages/OnboardingOrganization";
+import SignupOrganization from "./pages/SignupOrganization";
+import Pricing from "./pages/Pricing";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -72,6 +74,8 @@ const AppRoutes = () => (
   <Routes>
     <Route path="/" element={<Index />} />
     <Route path="/auth" element={<AuthRoute><Auth /></AuthRoute>} />
+    <Route path="/pricing" element={<Pricing />} />
+    <Route path="/signup/organization" element={<SignupOrganization />} />
     <Route path="/onboarding/organization" element={<ProtectedRoute><OnboardingOrganization /></ProtectedRoute>} />
     <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
     <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
