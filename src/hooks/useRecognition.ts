@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { awardRecognitionPoints, checkAchievementProgress } from '@/lib/gamification';
 
 interface Profile {
   user_id: string;
@@ -199,9 +200,25 @@ export const useRecognition = () => {
 
     if (error) throw error;
 
+    // Award points to both giver and receiver
+    await awardRecognitionPoints(user.id, toUserId, data.id);
+    
+    // Check achievements for both users
+    const { count: givenCount } = await supabase
+      .from('recognition_posts')
+      .select('id', { count: 'exact' })
+      .eq('from_user_id', user.id);
+    await checkAchievementProgress(user.id, 'recognition_given', givenCount || 0);
+    
+    const { count: receivedCount } = await supabase
+      .from('recognition_posts')
+      .select('id', { count: 'exact' })
+      .eq('to_user_id', toUserId);
+    await checkAchievementProgress(toUserId, 'recognition_received', receivedCount || 0);
+
     toast({
       title: 'Recognition sent!',
-      description: 'Your recognition has been posted.',
+      description: 'Your recognition has been posted. Points awarded to both of you!',
     });
 
     await fetchPosts();
