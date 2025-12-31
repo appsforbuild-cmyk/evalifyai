@@ -28,7 +28,7 @@ interface FilterValues {
 }
 
 const Analytics = () => {
-  const { user, hasRole } = useAuth();
+  const { hasRole } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
   const [filters, setFilters] = useState<FilterValues>({
@@ -47,13 +47,12 @@ const Analytics = () => {
     if (autoRefresh) {
       interval = setInterval(() => {
         handleRefresh();
-      }, 60000); // Refresh every minute
+      }, 60000);
     }
     return () => clearInterval(interval);
   }, [autoRefresh]);
 
   useEffect(() => {
-    // Subscribe to realtime updates
     const channel = supabase
       .channel('analytics-updates')
       .on(
@@ -74,7 +73,6 @@ const Analytics = () => {
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    // Simulate refresh - actual data fetching happens in child components
     await new Promise(resolve => setTimeout(resolve, 500));
     setLastUpdated(new Date());
     setIsRefreshing(false);
