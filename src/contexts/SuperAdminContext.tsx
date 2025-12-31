@@ -298,13 +298,14 @@ export function SuperAdminProvider({ children }: { children: React.ReactNode }) 
     if (!superAdmin) return;
 
     await supabase.from('admin_audit_logs').insert({
-      super_admin_id: superAdmin.id,
-      action,
-      target_type: targetType,
-      target_id: targetId,
-      details: details || {}
-    });
-  };
+    user_id: superAdmin.user_id, // Changed from super_admin_id
+  action,
+  target_type,
+  target_id,
+  details,
+  ip_address: await getClientIP(),
+  user_agent: navigator.userAgent
+});
 
   return (
     <SuperAdminContext.Provider
