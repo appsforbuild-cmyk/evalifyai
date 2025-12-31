@@ -30,6 +30,15 @@ const questionRecordingSchema = z.object({
   recordedAt: z.string().nullable(),
 });
 
+// Transcribe Only validation (for quick feedback without session)
+export const transcribeOnlySchema = z.object({
+  audioBase64: z
+    .string()
+    .min(1, 'Audio data is required')
+    .max(50 * 1024 * 1024, 'Audio data too large (max 50MB)'),
+  action: z.literal('transcribe-only'),
+});
+
 // Process Session validation
 export const processSessionSchema = z.object({
   sessionId: z
@@ -97,4 +106,5 @@ export async function validateRequestBody<T>(
 // Type exports
 export type CreateVoiceSessionInput = z.infer<typeof createVoiceSessionSchema>;
 export type ProcessSessionInput = z.infer<typeof processSessionSchema>;
+export type TranscribeOnlyInput = z.infer<typeof transcribeOnlySchema>;
 export type SendNotificationInput = z.infer<typeof sendNotificationSchema>;

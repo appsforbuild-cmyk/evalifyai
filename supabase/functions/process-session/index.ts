@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { FEEDBACK_PROMPT_TEMPLATE, FAIRNESS_CHECK_TEMPLATE, FAIRNESS_REWRITE_TEMPLATE } from "../_shared/promptTemplates.ts";
-import { processSessionSchema, validateRequestBody } from "../_shared/validation.ts";
+import { processSessionSchema, transcribeOnlySchema, validateRequestBody } from "../_shared/validation.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -340,12 +340,55 @@ serve(async (req) => {
 
     console.log(`Authenticated user: ${user.id}`);
 
-    // Validate request body with Zod
-    const validation = await validateRequestBody(req, processSessionSchema);
+    // Clone request to peek at body
+    const clonedReq = req.clone();
+    const bodyPeek = await clonedReq.json().catch(() => ({}));
+    
+    // Check if this is a transcribe-only request
+    if (bodyPeek.action === 'transcribe-only') {
+      console.log('Processing transcribe-only request');
+      
+      const transcribeValidation = transcribeOnlySchema.safeParse(bodyPeek);
+      if (!transcribeValidation.success) {
+        const errors = transcribeValidation.error.errors.map(e => `${e.path.join('.')}: ${e.message}`);
+        return new Response(
+          JSON.stringify({ error: `Validation failed: ${errors.join(', ')}` }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      const { audioBase64 } = transcribeValidation.data;
+      const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
+      
+      if (!openaiApiKey) {
+        return new Response(
+          JSON.stringify({ error: 'Transcription service not configured' }),
+          { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      try {
+        const result = await transcribeAudio(audioBase64, openaiApiKey);
+        return new Response(
+          JSON.stringify({ transcript: result.transcript }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      } catch (error) {
+        console.error('Transcription error:', error);
+        return new Response(
+          JSON.stringify({ error: 'Failed to transcribe audio' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
+    // Full session processing - Validate request body with Zod
+    const validation = processSessionSchema.safeParse(bodyPeek);
     if (!validation.success) {
-      console.error('Validation error:', validation.error);
+      const errors = validation.error.errors.map(e => `${e.path.join('.')}: ${e.message}`);
+      console.error('Validation error:', errors);
       return new Response(
-        JSON.stringify({ error: validation.error }),
+        JSON.stringify({ error: `Validation failed: ${errors.join(', ')}` }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
