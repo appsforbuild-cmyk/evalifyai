@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      achievements: {
+        Row: {
+          category: string
+          created_at: string
+          criteria: Json
+          description: string
+          icon: string
+          id: string
+          name: string
+          points: number
+          rarity: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          criteria?: Json
+          description: string
+          icon?: string
+          id?: string
+          name: string
+          points?: number
+          rarity?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          criteria?: Json
+          description?: string
+          icon?: string
+          id?: string
+          name?: string
+          points?: number
+          rarity?: string
+        }
+        Relationships: []
+      }
       admin_api_keys: {
         Row: {
           created_at: string
@@ -603,6 +639,33 @@ export type Database = {
         }
         Relationships: []
       }
+      point_transactions: {
+        Row: {
+          action_type: string
+          created_at: string
+          id: string
+          points: number
+          reference_id: string | null
+          user_id: string
+        }
+        Insert: {
+          action_type: string
+          created_at?: string
+          id?: string
+          points: number
+          reference_id?: string | null
+          user_id: string
+        }
+        Update: {
+          action_type?: string
+          created_at?: string
+          id?: string
+          points?: number
+          reference_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           attrition_opt_out: boolean | null
@@ -669,6 +732,100 @@ export type Database = {
           feedback_type?: string | null
           id?: string
           transcript?: string | null
+        }
+        Relationships: []
+      }
+      recognition_comments: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          recognition_id: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          recognition_id: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          recognition_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recognition_comments_recognition_id_fkey"
+            columns: ["recognition_id"]
+            isOneToOne: false
+            referencedRelation: "recognition_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recognition_likes: {
+        Row: {
+          created_at: string
+          id: string
+          recognition_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          recognition_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          recognition_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recognition_likes_recognition_id_fkey"
+            columns: ["recognition_id"]
+            isOneToOne: false
+            referencedRelation: "recognition_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recognition_posts: {
+        Row: {
+          created_at: string
+          from_user_id: string
+          id: string
+          is_public: boolean
+          likes: number
+          message: string
+          recognition_type: string
+          to_user_id: string
+        }
+        Insert: {
+          created_at?: string
+          from_user_id: string
+          id?: string
+          is_public?: boolean
+          likes?: number
+          message: string
+          recognition_type?: string
+          to_user_id: string
+        }
+        Update: {
+          created_at?: string
+          from_user_id?: string
+          id?: string
+          is_public?: boolean
+          likes?: number
+          message?: string
+          recognition_type?: string
+          to_user_id?: string
         }
         Relationships: []
       }
@@ -804,6 +961,44 @@ export type Database = {
         }
         Relationships: []
       }
+      user_achievements: {
+        Row: {
+          achievement_id: string
+          created_at: string
+          earned_at: string
+          id: string
+          is_displayed: boolean
+          progress: number
+          user_id: string
+        }
+        Insert: {
+          achievement_id: string
+          created_at?: string
+          earned_at?: string
+          id?: string
+          is_displayed?: boolean
+          progress?: number
+          user_id: string
+        }
+        Update: {
+          achievement_id?: string
+          created_at?: string
+          earned_at?: string
+          id?: string
+          is_displayed?: boolean
+          progress?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_achievements_achievement_id_fkey"
+            columns: ["achievement_id"]
+            isOneToOne: false
+            referencedRelation: "achievements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_import_history: {
         Row: {
           created_at: string
@@ -834,6 +1029,42 @@ export type Database = {
           method?: string
           success_count?: number
           total_count?: number
+        }
+        Relationships: []
+      }
+      user_points: {
+        Row: {
+          gamification_opt_out: boolean
+          id: string
+          level: number
+          points_this_month: number
+          points_this_week: number
+          rank: string
+          total_points: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          gamification_opt_out?: boolean
+          id?: string
+          level?: number
+          points_this_month?: number
+          points_this_week?: number
+          rank?: string
+          total_points?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          gamification_opt_out?: boolean
+          id?: string
+          level?: number
+          points_this_month?: number
+          points_this_week?: number
+          rank?: string
+          total_points?: number
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
