@@ -2,13 +2,11 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
-import { ArrowLeft, RefreshCw, Clock } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import DashboardLayout from '@/components/DashboardLayout';
-import { AnalyticsFilters } from '@/components/analytics/AnalyticsFilters';
+import { AnalyticsFiltersComponent, AnalyticsFilters } from '@/components/analytics/AnalyticsFilters';
 import { ExportMenu } from '@/components/analytics/ExportMenu';
 import { OverviewTab } from '@/components/analytics/tabs/OverviewTab';
 import { FeedbackAnalyticsTab } from '@/components/analytics/tabs/FeedbackAnalyticsTab';
@@ -18,29 +16,21 @@ import { BiasTab } from '@/components/analytics/tabs/BiasTab';
 import { RetentionTab } from '@/components/analytics/tabs/RetentionTab';
 import { ReportBuilder } from '@/components/analytics/ReportBuilder';
 import { supabase } from '@/integrations/supabase/client';
-import { formatDistanceToNow } from 'date-fns';
-
-interface FilterValues {
-  dateRange: string;
-  departments: string[];
-  teams: string[];
-  manager: string;
-}
+import { subDays } from 'date-fns';
 
 const Analytics = () => {
   const { hasRole } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
-  const [filters, setFilters] = useState<FilterValues>({
-    dateRange: 'last-90-days',
+  const [filters, setFilters] = useState<AnalyticsFilters>({
+    dateRange: { from: subDays(new Date(), 30), to: new Date() },
     departments: [],
     teams: [],
-    manager: ''
+    manager: null
   });
   const [autoRefresh, setAutoRefresh] = useState(false);
-  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [dataQuality, setDataQuality] = useState({ completeness: 85, missingPoints: 3 });
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(new Date());
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -72,14 +62,14 @@ const Analytics = () => {
   }, [autoRefresh]);
 
   const handleRefresh = async () => {
-    setIsRefreshing(true);
+    setIsLoading(true);
     await new Promise(resolve => setTimeout(resolve, 500));
     setLastUpdated(new Date());
-    setIsRefreshing(false);
+    setIsLoading(false);
     toast.success('Data refreshed');
   };
 
-  const handleApplyFilters = (newFilters: FilterValues) => {
+  const handleFiltersChange = (newFilters: AnalyticsFilters) => {
     setFilters(newFilters);
     setLastUpdated(new Date());
   };
@@ -110,48 +100,20 @@ const Analytics = () => {
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-4">
-            {/* Data Quality Indicator */}
-            <div className="text-sm text-muted-foreground border rounded-lg px-3 py-1.5">
-              Data completeness: <span className="font-medium text-foreground">{dataQuality.completeness}%</span>
-              {dataQuality.missingPoints > 0 && (
-                <span className="text-amber-500 ml-2">({dataQuality.missingPoints} missing)</span>
-              )}
-            </div>
-
-            {/* Last Updated */}
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Clock className="w-4 h-4" />
-              Updated {formatDistanceToNow(lastUpdated, { addSuffix: true })}
-            </div>
-
-            {/* Auto Refresh Toggle */}
-            <div className="flex items-center gap-2">
-              <Switch
-                id="auto-refresh"
-                checked={autoRefresh}
-                onCheckedChange={setAutoRefresh}
-              />
-              <Label htmlFor="auto-refresh" className="text-sm">Auto-refresh</Label>
-            </div>
-
-            {/* Refresh Button */}
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={handleRefresh}
-              disabled={isRefreshing}
-            >
-              <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
-              Refresh
-            </Button>
-
-            {/* Export Menu */}
-            <ExportMenu />
+            <ExportMenu tabName={activeTab} filters={filters} />
           </div>
         </div>
 
         {/* Filters */}
-        <AnalyticsFilters onApplyFilters={handleApplyFilters} />
+        <AnalyticsFiltersComponent 
+          filters={filters}
+          onFiltersChange={handleFiltersChange}
+          onRefresh={handleRefresh}
+          lastUpdated={lastUpdated}
+          autoRefresh={autoRefresh}
+          onAutoRefreshChange={setAutoRefresh}
+          isLoading={isLoading}
+        />
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
@@ -166,27 +128,27 @@ const Analytics = () => {
           </TabsList>
 
           <TabsContent value="overview">
-            <OverviewTab filters={filters} />
+            <OverviewTab filters={filters} isLoading={isLoading} />
           </TabsContent>
 
           <TabsContent value="feedback">
-            <FeedbackAnalyticsTab filters={filters} />
+            <FeedbackAnalyticsTab filters={filters} isLoading={isLoading} />
           </TabsContent>
 
           <TabsContent value="engagement">
-            <EngagementTab filters={filters} />
+            <EngagementTab filters={filters} isLoading={isLoading} />
           </TabsContent>
 
           <TabsContent value="performance">
-            <PerformanceTab filters={filters} />
+            <PerformanceTab filters={filters} isLoading={isLoading} />
           </TabsContent>
 
           <TabsContent value="bias">
-            <BiasTab filters={filters} />
+            <BiasTab filters={filters} isLoading={isLoading} />
           </TabsContent>
 
           <TabsContent value="retention">
-            <RetentionTab filters={filters} />
+            <RetentionTab filters={filters} isLoading={isLoading} />
           </TabsContent>
 
           <TabsContent value="builder">
