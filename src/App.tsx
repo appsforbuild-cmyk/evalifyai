@@ -30,6 +30,8 @@ import SSOConfig from "./pages/SSOConfig";
 import Notifications from "./pages/Notifications";
 import NotificationSettings from "./pages/NotificationSettings";
 import BiasAnalytics from "./pages/BiasAnalytics";
+import Analytics from "./pages/Analytics";
+import ScheduledReports from "./pages/ScheduledReports";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -91,6 +93,8 @@ const AppRoutes = () => (
     <Route path="/hr/attrition-overview" element={<ProtectedRoute><AttritionOverview /></ProtectedRoute>} />
     <Route path="/recognition" element={<ProtectedRoute><Recognition /></ProtectedRoute>} />
     <Route path="/leaderboards" element={<ProtectedRoute><Leaderboards /></ProtectedRoute>} />
+    <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
+    <Route path="/analytics/scheduled-reports" element={<ProtectedRoute><ScheduledReports /></ProtectedRoute>} />
     <Route path="*" element={<NotFound />} />
   </Routes>
 );
