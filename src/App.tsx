@@ -8,6 +8,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { OrganizationProvider } from "@/contexts/OrganizationContext";
 import { GamificationProvider } from "@/components/gamification/GamificationProvider";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -32,6 +33,7 @@ import NotificationSettings from "./pages/NotificationSettings";
 import BiasAnalytics from "./pages/BiasAnalytics";
 import Analytics from "./pages/Analytics";
 import ScheduledReports from "./pages/ScheduledReports";
+import OnboardingOrganization from "./pages/OnboardingOrganization";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -70,6 +72,7 @@ const AppRoutes = () => (
   <Routes>
     <Route path="/" element={<Index />} />
     <Route path="/auth" element={<AuthRoute><Auth /></AuthRoute>} />
+    <Route path="/onboarding/organization" element={<ProtectedRoute><OnboardingOrganization /></ProtectedRoute>} />
     <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
     <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
     <Route path="/admin/question-templates" element={<ProtectedRoute><QuestionTemplates /></ProtectedRoute>} />
@@ -106,9 +109,11 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <GamificationProvider>
-            <AppRoutes />
-          </GamificationProvider>
+          <OrganizationProvider>
+            <GamificationProvider>
+              <AppRoutes />
+            </GamificationProvider>
+          </OrganizationProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

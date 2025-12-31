@@ -198,7 +198,15 @@ export const useNotificationPreferences = () => {
         .single();
       
       if (error && error.code !== 'PGRST116') throw error;
-      return data as NotificationPreferences | null;
+      if (!data) return null;
+      
+      // Parse channels from Json to proper type
+      return {
+        ...data,
+        channels: (typeof data.channels === 'object' && data.channels !== null && !Array.isArray(data.channels)
+          ? data.channels
+          : {}) as Record<string, { email: boolean; push: boolean }>,
+      } as NotificationPreferences;
     },
     enabled: !!user?.id,
   });

@@ -19,6 +19,7 @@ interface ReportRequest {
     manager?: string;
   };
   emailTo?: string[];
+  organizationId?: string;
 }
 
 serve(async (req) => {
@@ -31,29 +32,35 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { reportType, format, dateRange, filters, emailTo }: ReportRequest = await req.json();
+    const { reportType, format, dateRange, filters, emailTo, organizationId }: ReportRequest = await req.json();
 
-    console.log(`Generating ${format} report for ${reportType}`, { dateRange, filters });
+    console.log(`Generating ${format} report for ${reportType}`, { dateRange, filters, organizationId });
+
+    // Build organization filter
+    const orgFilter = organizationId ? { organization_id: organizationId } : {};
 
     // Fetch data based on report type
-    let reportData: any = {};
+    let reportData: Record<string, unknown> = {};
 
     switch (reportType) {
-      case 'overview':
+      case 'overview': {
         const [feedbackResult, sessionsResult, biasResult] = await Promise.all([
           supabase
             .from('feedback_entries')
             .select('*, voice_sessions!inner(*)')
+            .match(orgFilter)
             .gte('created_at', dateRange.start)
             .lte('created_at', dateRange.end),
           supabase
             .from('voice_sessions')
             .select('*')
+            .match(orgFilter)
             .gte('created_at', dateRange.start)
             .lte('created_at', dateRange.end),
           supabase
             .from('bias_audit_log')
             .select('bias_score')
+            .match(orgFilter)
             .gte('created_at', dateRange.start)
             .lte('created_at', dateRange.end)
         ]);
@@ -67,11 +74,13 @@ serve(async (req) => {
             : 0,
         };
         break;
+      }
 
-      case 'feedback':
+      case 'feedback': {
         const feedbackData = await supabase
           .from('feedback_entries')
           .select('*, voice_sessions!inner(title, employee_id, manager_id, created_at)')
+          .match(orgFilter)
           .gte('created_at', dateRange.start)
           .lte('created_at', dateRange.end);
 
@@ -81,22 +90,26 @@ serve(async (req) => {
           publishedCount: feedbackData.data?.filter(f => f.is_published).length || 0,
         };
         break;
+      }
 
-      case 'engagement':
+      case 'engagement': {
         const [recognitionData, goalsData, pointsData] = await Promise.all([
           supabase
             .from('recognition_posts')
             .select('*')
+            .match(orgFilter)
             .gte('created_at', dateRange.start)
             .lte('created_at', dateRange.end),
           supabase
             .from('goals')
             .select('*')
+            .match(orgFilter)
             .gte('created_at', dateRange.start)
             .lte('created_at', dateRange.end),
           supabase
             .from('user_points')
             .select('total_points, level')
+            .match(orgFilter)
         ]);
 
         reportData = {
@@ -108,11 +121,13 @@ serve(async (req) => {
             : 0,
         };
         break;
+      }
 
-      case 'performance':
+      case 'performance': {
         const performanceData = await supabase
           .from('goals')
           .select('*, profiles!inner(full_name, team)')
+          .match(orgFilter)
           .gte('created_at', dateRange.start)
           .lte('created_at', dateRange.end);
 
@@ -123,11 +138,13 @@ serve(async (req) => {
             : 0,
         };
         break;
+      }
 
-      case 'bias':
+      case 'bias': {
         const biasData = await supabase
           .from('bias_audit_log')
           .select('*')
+          .match(orgFilter)
           .gte('created_at', dateRange.start)
           .lte('created_at', dateRange.end)
           .order('created_at', { ascending: false });
@@ -135,6 +152,7 @@ serve(async (req) => {
         const benchmarkData = await supabase
           .from('organization_bias_benchmarks')
           .select('*')
+          .match(orgFilter)
           .order('computed_at', { ascending: false })
           .limit(1);
 
@@ -146,15 +164,18 @@ serve(async (req) => {
           benchmark: benchmarkData.data?.[0] || null,
         };
         break;
+      }
 
-      case 'retention':
+      case 'retention': {
         const [predictionsData, plansData] = await Promise.all([
           supabase
             .from('attrition_predictions')
-            .select('*, profiles!inner(full_name, team)'),
+            .select('*, profiles!inner(full_name, team)')
+            .match(orgFilter),
           supabase
             .from('retention_action_plans')
             .select('*')
+            .match(orgFilter)
             .gte('created_at', dateRange.start)
             .lte('created_at', dateRange.end)
         ]);
@@ -172,6 +193,7 @@ serve(async (req) => {
           riskDistribution,
         };
         break;
+      }
     }
 
     // Generate report content based on format
@@ -189,7 +211,6 @@ serve(async (req) => {
         break;
 
       case 'excel':
-        // For Excel, we return JSON that the frontend will convert using xlsx library
         fileContent = JSON.stringify({
           type: 'excel',
           data: reportData,
@@ -202,7 +223,6 @@ serve(async (req) => {
         break;
 
       case 'pptx':
-        // For PPTX, we return JSON that the frontend will convert using pptxgenjs
         fileContent = JSON.stringify({
           type: 'pptx',
           data: reportData,
@@ -216,7 +236,6 @@ serve(async (req) => {
 
       case 'pdf':
       default:
-        // For PDF, we return JSON that the frontend will convert using jsPDF
         fileContent = JSON.stringify({
           type: 'pdf',
           data: reportData,
@@ -229,7 +248,6 @@ serve(async (req) => {
         break;
     }
 
-    // If email recipients specified, log it (Resend would be imported at top level in production)
     if (emailTo && emailTo.length > 0) {
       console.log(`Report would be emailed to: ${emailTo.join(', ')}`);
     }
@@ -244,24 +262,7 @@ serve(async (req) => {
   } catch (error) {
     console.error("Error generating report:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
-    );
-  }
-});
-      headers: {
-        ...corsHeaders,
-        "Content-Type": contentType,
-        "Content-Disposition": `attachment; filename="${fileName}"`,
-      },
-    });
-  } catch (error) {
-    console.error("Error generating report:", error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: (error as Error).message }),
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -270,10 +271,9 @@ serve(async (req) => {
   }
 });
 
-function generateCSV(reportType: string, data: any): string {
+function generateCSV(reportType: string, data: Record<string, unknown>): string {
   const rows: string[][] = [];
   
-  // Add header row
   rows.push(['EvalifyAI Report', reportType.toUpperCase()]);
   rows.push(['Generated', new Date().toISOString()]);
   rows.push([]);
@@ -281,50 +281,52 @@ function generateCSV(reportType: string, data: any): string {
   switch (reportType) {
     case 'overview':
       rows.push(['Metric', 'Value']);
-      rows.push(['Total Sessions', data.totalSessions]);
-      rows.push(['Completed Sessions', data.completedSessions]);
-      rows.push(['Published Feedback', data.publishedFeedback]);
-      rows.push(['Average Bias Score', data.avgBiasScore?.toFixed(1)]);
+      rows.push(['Total Sessions', String(data.totalSessions)]);
+      rows.push(['Completed Sessions', String(data.completedSessions)]);
+      rows.push(['Published Feedback', String(data.publishedFeedback)]);
+      rows.push(['Average Bias Score', String((data.avgBiasScore as number)?.toFixed(1))]);
       break;
 
     case 'feedback':
       rows.push(['ID', 'Created At', 'Published', 'AI Draft Preview']);
-      data.entries?.forEach((entry: any) => {
+      (data.entries as Array<Record<string, unknown>>)?.forEach((entry) => {
         rows.push([
-          entry.id,
-          entry.created_at,
+          String(entry.id),
+          String(entry.created_at),
           entry.is_published ? 'Yes' : 'No',
-          (entry.ai_draft || '').substring(0, 100)
+          ((entry.ai_draft as string) || '').substring(0, 100)
         ]);
       });
       break;
 
     case 'engagement':
       rows.push(['Metric', 'Value']);
-      rows.push(['Recognition Count', data.recognitionCount]);
-      rows.push(['Goals Created', data.goalsCreated]);
-      rows.push(['Goals Completed', data.goalsCompleted]);
-      rows.push(['Average Points', data.avgPoints?.toFixed(0)]);
+      rows.push(['Recognition Count', String(data.recognitionCount)]);
+      rows.push(['Goals Created', String(data.goalsCreated)]);
+      rows.push(['Goals Completed', String(data.goalsCompleted)]);
+      rows.push(['Average Points', String((data.avgPoints as number)?.toFixed(0))]);
       break;
 
     case 'bias':
       rows.push(['Metric', 'Value']);
-      rows.push(['Total Audits', data.audits?.length || 0]);
-      rows.push(['Average Score', data.avgScore?.toFixed(1)]);
+      rows.push(['Total Audits', String((data.audits as unknown[])?.length || 0)]);
+      rows.push(['Average Score', String((data.avgScore as number)?.toFixed(1))]);
       rows.push([]);
       rows.push(['Date', 'Score', 'Content Type']);
-      data.audits?.slice(0, 50).forEach((audit: any) => {
-        rows.push([audit.created_at, audit.bias_score, audit.content_type]);
+      (data.audits as Array<Record<string, unknown>>)?.slice(0, 50).forEach((audit) => {
+        rows.push([String(audit.created_at), String(audit.bias_score), String(audit.content_type)]);
       });
       break;
 
-    case 'retention':
+    case 'retention': {
+      const riskDist = data.riskDistribution as Record<string, number>;
       rows.push(['Risk Level', 'Count']);
-      rows.push(['Low', data.riskDistribution?.low || 0]);
-      rows.push(['Medium', data.riskDistribution?.medium || 0]);
-      rows.push(['High', data.riskDistribution?.high || 0]);
-      rows.push(['Critical', data.riskDistribution?.critical || 0]);
+      rows.push(['Low', String(riskDist?.low || 0)]);
+      rows.push(['Medium', String(riskDist?.medium || 0)]);
+      rows.push(['High', String(riskDist?.high || 0)]);
+      rows.push(['Critical', String(riskDist?.critical || 0)]);
       break;
+    }
 
     default:
       rows.push(['Data', JSON.stringify(data)]);
@@ -333,8 +335,8 @@ function generateCSV(reportType: string, data: any): string {
   return rows.map(row => row.join(',')).join('\n');
 }
 
-function generateExcelSheets(reportType: string, data: any): any[] {
-  const sheets = [];
+function generateExcelSheets(reportType: string, data: Record<string, unknown>): Array<{ name: string; data: unknown[][] }> {
+  const sheets: Array<{ name: string; data: unknown[][] }> = [];
 
   sheets.push({
     name: 'Summary',
@@ -363,30 +365,32 @@ function generateExcelSheets(reportType: string, data: any): any[] {
         name: 'Feedback Entries',
         data: [
           ['ID', 'Created At', 'Published', 'Session ID'],
-          ...(data.entries || []).map((e: any) => [e.id, e.created_at, e.is_published, e.session_id])
+          ...((data.entries as Array<Record<string, unknown>>) || []).map((e) => [e.id, e.created_at, e.is_published, e.session_id])
         ]
       });
       break;
 
-    case 'retention':
+    case 'retention': {
+      const riskDist = data.riskDistribution as Record<string, number>;
       sheets.push({
         name: 'Risk Distribution',
         data: [
           ['Risk Level', 'Count'],
-          ['Low', data.riskDistribution?.low || 0],
-          ['Medium', data.riskDistribution?.medium || 0],
-          ['High', data.riskDistribution?.high || 0],
-          ['Critical', data.riskDistribution?.critical || 0],
+          ['Low', riskDist?.low || 0],
+          ['Medium', riskDist?.medium || 0],
+          ['High', riskDist?.high || 0],
+          ['Critical', riskDist?.critical || 0],
         ]
       });
       break;
+    }
   }
 
   return sheets;
 }
 
-function generatePDFSections(reportType: string, data: any, dateRange: any): any[] {
-  const sections = [];
+function generatePDFSections(reportType: string, data: Record<string, unknown>, dateRange: { start: string; end: string }): Array<Record<string, unknown>> {
+  const sections: Array<Record<string, unknown>> = [];
 
   sections.push({
     type: 'header',
@@ -409,7 +413,7 @@ function generatePDFSections(reportType: string, data: any, dateRange: any): any
           { label: 'Total Sessions', value: data.totalSessions },
           { label: 'Completed Sessions', value: data.completedSessions },
           { label: 'Published Feedback', value: data.publishedFeedback },
-          { label: 'Average Bias Score', value: data.avgBiasScore?.toFixed(1) },
+          { label: 'Average Bias Score', value: (data.avgBiasScore as number)?.toFixed(1) },
         ]
       });
       break;
@@ -427,8 +431,8 @@ function generatePDFSections(reportType: string, data: any, dateRange: any): any
   return sections;
 }
 
-function generatePPTXSlides(reportType: string, data: any, dateRange: any): any[] {
-  const slides = [];
+function generatePPTXSlides(reportType: string, data: Record<string, unknown>, dateRange: { start: string; end: string }): Array<Record<string, unknown>> {
+  const slides: Array<Record<string, unknown>> = [];
 
   slides.push({
     type: 'title',
