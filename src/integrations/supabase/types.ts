@@ -869,44 +869,86 @@ export type Database = {
       }
       organization_settings: {
         Row: {
+          accent_color: string | null
+          background_color: string | null
           company_name: string | null
           created_at: string
           custom_branding: Json | null
           date_format: string
+          domain_status: string | null
+          domain_verification_token: string | null
+          email_footer_content: string | null
+          email_header_logo_url: string | null
           email_notifications: boolean
           email_templates: Json | null
+          error_color: string | null
           feedback_reminder_days: number
+          font_body: string | null
+          font_heading: string | null
           id: string
           language: string
+          logo_icon_url: string | null
           organization_id: string
+          platform_name: string | null
+          powered_by_enabled: boolean | null
+          primary_color: string | null
+          secondary_color: string | null
           timezone: string
           updated_at: string
         }
         Insert: {
+          accent_color?: string | null
+          background_color?: string | null
           company_name?: string | null
           created_at?: string
           custom_branding?: Json | null
           date_format?: string
+          domain_status?: string | null
+          domain_verification_token?: string | null
+          email_footer_content?: string | null
+          email_header_logo_url?: string | null
           email_notifications?: boolean
           email_templates?: Json | null
+          error_color?: string | null
           feedback_reminder_days?: number
+          font_body?: string | null
+          font_heading?: string | null
           id?: string
           language?: string
+          logo_icon_url?: string | null
           organization_id: string
+          platform_name?: string | null
+          powered_by_enabled?: boolean | null
+          primary_color?: string | null
+          secondary_color?: string | null
           timezone?: string
           updated_at?: string
         }
         Update: {
+          accent_color?: string | null
+          background_color?: string | null
           company_name?: string | null
           created_at?: string
           custom_branding?: Json | null
           date_format?: string
+          domain_status?: string | null
+          domain_verification_token?: string | null
+          email_footer_content?: string | null
+          email_header_logo_url?: string | null
           email_notifications?: boolean
           email_templates?: Json | null
+          error_color?: string | null
           feedback_reminder_days?: number
+          font_body?: string | null
+          font_heading?: string | null
           id?: string
           language?: string
+          logo_icon_url?: string | null
           organization_id?: string
+          platform_name?: string | null
+          powered_by_enabled?: boolean | null
+          primary_color?: string | null
+          secondary_color?: string | null
           timezone?: string
           updated_at?: string
         }

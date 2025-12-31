@@ -9,6 +9,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { OrganizationProvider } from "@/contexts/OrganizationContext";
+import { BrandingProvider } from "@/contexts/BrandingContext";
 import { GamificationProvider } from "@/components/gamification/GamificationProvider";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -38,6 +39,7 @@ import SignupOrganization from "./pages/SignupOrganization";
 import Pricing from "./pages/Pricing";
 import Onboarding from "./pages/Onboarding";
 import InviteAccept from "./pages/InviteAccept";
+import BrandingSettings from "./pages/BrandingSettings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -99,6 +101,7 @@ const AppRoutes = () => (
     <Route path="/hr-analytics" element={<ProtectedRoute><HRAnalytics /></ProtectedRoute>} />
     <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
     <Route path="/settings/notifications" element={<ProtectedRoute><NotificationSettings /></ProtectedRoute>} />
+    <Route path="/settings/branding" element={<ProtectedRoute><BrandingSettings /></ProtectedRoute>} />
     <Route path="/admin/bias-analytics" element={<ProtectedRoute><BiasAnalytics /></ProtectedRoute>} />
     <Route path="/manager/retention-alerts" element={<ProtectedRoute><RetentionAlerts /></ProtectedRoute>} />
     <Route path="/hr/attrition-overview" element={<ProtectedRoute><AttritionOverview /></ProtectedRoute>} />
@@ -118,9 +121,11 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <OrganizationProvider>
-            <GamificationProvider>
-              <AppRoutes />
-            </GamificationProvider>
+            <BrandingProvider>
+              <GamificationProvider>
+                <AppRoutes />
+              </GamificationProvider>
+            </BrandingProvider>
           </OrganizationProvider>
         </AuthProvider>
       </BrowserRouter>
