@@ -2,8 +2,9 @@ import { ReactNode } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { LogOut, LayoutDashboard, Users, Mic, BarChart3, Shield, MessageSquare, Target, TrendingUp } from 'lucide-react';
+import { LogOut, LayoutDashboard, Users, Mic, BarChart3, Shield, MessageSquare, Target, TrendingUp, Trophy, Heart } from 'lucide-react';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
+import { PointsDisplay } from '@/components/gamification/PointsDisplay';
 import logo from '@/assets/evalifyai-logo.png';
 
 interface DashboardLayoutProps {
@@ -30,6 +31,8 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     { path: '/quick-feedback', label: 'Quick Feedback', icon: MessageSquare, roles: ['manager', 'employee'] },
     { path: '/goals', label: 'Goals', icon: Target, roles: ['manager', 'employee'] },
     { path: '/hr-analytics', label: 'Analytics', icon: BarChart3, roles: ['hr'] },
+    { path: '/recognition', label: 'Recognition', icon: Heart, roles: ['manager', 'employee', 'hr', 'admin'] },
+    { path: '/leaderboards', label: 'Leaderboards', icon: Trophy, roles: ['manager', 'employee', 'hr', 'admin'] },
   ];
 
   const visibleNavItems = navItems.filter(item => 
@@ -63,6 +66,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           </nav>
 
           <div className="flex items-center gap-3">
+            <PointsDisplay compact />
             <NotificationBell />
             <span className="text-sm text-muted-foreground hidden sm:block">
               {user?.email}
