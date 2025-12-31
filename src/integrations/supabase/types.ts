@@ -92,6 +92,69 @@ export type Database = {
         }
         Relationships: []
       }
+      attrition_prediction_history: {
+        Row: {
+          employee_id: string
+          id: string
+          recorded_at: string
+          risk_level: string
+          risk_score: number
+        }
+        Insert: {
+          employee_id: string
+          id?: string
+          recorded_at?: string
+          risk_level: string
+          risk_score: number
+        }
+        Update: {
+          employee_id?: string
+          id?: string
+          recorded_at?: string
+          risk_level?: string
+          risk_score?: number
+        }
+        Relationships: []
+      }
+      attrition_predictions: {
+        Row: {
+          confidence: number
+          contributing_factors: Json
+          created_at: string
+          employee_id: string
+          id: string
+          last_calculated: string
+          predicted_timeframe: string
+          recommended_actions: Json
+          risk_level: string
+          risk_score: number
+        }
+        Insert: {
+          confidence?: number
+          contributing_factors?: Json
+          created_at?: string
+          employee_id: string
+          id?: string
+          last_calculated?: string
+          predicted_timeframe?: string
+          recommended_actions?: Json
+          risk_level: string
+          risk_score: number
+        }
+        Update: {
+          confidence?: number
+          contributing_factors?: Json
+          created_at?: string
+          employee_id?: string
+          id?: string
+          last_calculated?: string
+          predicted_timeframe?: string
+          recommended_actions?: Json
+          risk_level?: string
+          risk_score?: number
+        }
+        Relationships: []
+      }
       bias_audit_log: {
         Row: {
           bias_score: number
@@ -542,6 +605,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          attrition_opt_out: boolean | null
           avatar_url: string | null
           created_at: string | null
           email: string | null
@@ -553,6 +617,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          attrition_opt_out?: boolean | null
           avatar_url?: string | null
           created_at?: string | null
           email?: string | null
@@ -564,6 +629,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          attrition_opt_out?: boolean | null
           avatar_url?: string | null
           created_at?: string | null
           email?: string | null
@@ -603,6 +669,72 @@ export type Database = {
           feedback_type?: string | null
           id?: string
           transcript?: string | null
+        }
+        Relationships: []
+      }
+      retention_action_plans: {
+        Row: {
+          actions: Json
+          completed_at: string | null
+          created_at: string
+          created_by: string
+          employee_id: string
+          id: string
+          impact_score_after: number | null
+          impact_score_before: number | null
+          notes: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          actions?: Json
+          completed_at?: string | null
+          created_at?: string
+          created_by: string
+          employee_id: string
+          id?: string
+          impact_score_after?: number | null
+          impact_score_before?: number | null
+          notes?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          actions?: Json
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string
+          employee_id?: string
+          id?: string
+          impact_score_after?: number | null
+          impact_score_before?: number | null
+          notes?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      risk_view_audit: {
+        Row: {
+          action: string
+          created_at: string
+          employee_id: string
+          id: string
+          viewer_id: string
+        }
+        Insert: {
+          action?: string
+          created_at?: string
+          employee_id: string
+          id?: string
+          viewer_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          employee_id?: string
+          id?: string
+          viewer_id?: string
         }
         Relationships: []
       }
