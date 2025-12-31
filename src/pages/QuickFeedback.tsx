@@ -12,6 +12,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import DashboardLayout from '@/components/DashboardLayout';
 import { quickFeedbackSchema } from '@/lib/validations';
+import { awardPointsToUser, checkAchievementProgress } from '@/lib/gamification';
+import { useGamificationToasts } from '@/components/gamification/GamificationProvider';
 
 interface Employee {
   id: string;
@@ -33,6 +35,7 @@ interface QuickFeedbackEntry {
 const QuickFeedback = () => {
   const { user, hasRole } = useAuth();
   const navigate = useNavigate();
+  const { showPointsEarned, showAchievement } = useGamificationToasts();
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [selectedEmployee, setSelectedEmployee] = useState<string>('');
   const [feedbackText, setFeedbackText] = useState('');
@@ -181,6 +184,21 @@ const QuickFeedback = () => {
       setFeedbackText('');
       setSelectedEmployee('');
       fetchRecentFeedback();
+      
+      // Award points for giving quick feedback
+      if (user?.id) {
+        const result = await awardPointsToUser(user.id, 'quick_feedback');
+        if (result.pointsAwarded) {
+          showPointsEarned(result.pointsAwarded, 'Quick feedback sent');
+        }
+        
+        // Check for quick feedback achievement
+        const feedbackCount = recentFeedback.filter(f => f.created_by_profile_id === user.id).length + 1;
+        const earnedAchievement = await checkAchievementProgress(user.id, 'quick_feedback', feedbackCount);
+        if (earnedAchievement) {
+          showAchievement(earnedAchievement as any);
+        }
+      }
     }
   };
 

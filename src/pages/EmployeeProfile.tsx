@@ -5,14 +5,17 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ArrowLeft, User, Mail, Building2, Briefcase, Calendar, FileText, TrendingUp, Clock, Star, Target, BookOpen, Download, BarChart3, Users, Check } from 'lucide-react';
+import { ArrowLeft, User, Mail, Building2, Briefcase, Calendar, FileText, TrendingUp, Clock, Star, Target, BookOpen, Download, BarChart3, Users, Check, Trophy } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Progress } from '@/components/ui/progress';
+import { ProfileGamification } from '@/components/gamification/ProfileGamification';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
 import { toast } from 'sonner';
 import { generatePDFReport } from '@/utils/pdfExport';
+import { awardPointsToUser, checkAchievementProgress } from '@/lib/gamification';
+import { useGamificationToasts } from '@/components/gamification/GamificationProvider';
 
 interface Employee {
   id: string;
@@ -153,6 +156,7 @@ const EmployeeProfile = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { showPointsEarned, showAchievement } = useGamificationToasts();
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [loading, setLoading] = useState(true);
   const [completedMilestones, setCompletedMilestones] = useState<string[]>([]);
@@ -244,6 +248,21 @@ const EmployeeProfile = () => {
       if (!error) {
         setCompletedMilestones(prev => [...prev, goal]);
         toast.success('Milestone marked as completed!');
+        
+        // Award points for completing a milestone
+        if (user?.id) {
+          const result = await awardPointsToUser(user.id, 'achieve_milestone');
+          if (result.pointsAwarded) {
+            showPointsEarned(result.pointsAwarded, 'Milestone completed!');
+          }
+          
+          // Check for milestones achievement
+          const milestonesCount = completedMilestones.length + 1;
+          const earnedAchievement = await checkAchievementProgress(user.id, 'milestones_completed', milestonesCount);
+          if (earnedAchievement) {
+            showAchievement(earnedAchievement as any);
+          }
+        }
       } else {
         toast.error('Failed to update milestone');
       }
@@ -353,10 +372,17 @@ const EmployeeProfile = () => {
         <Tabs defaultValue="overview" className="space-y-4">
           <TabsList>
             <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="gamification">
+              <Trophy className="w-4 h-4 mr-1" /> Achievements
+            </TabsTrigger>
             <TabsTrigger value="trends">Performance Trends</TabsTrigger>
             <TabsTrigger value="feedback">Feedback History</TabsTrigger>
             <TabsTrigger value="growth">Growth Path</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="gamification">
+            {id && <ProfileGamification userId={id} showFull />}
+          </TabsContent>
 
           <TabsContent value="overview" className="space-y-4">
             <div className="grid md:grid-cols-3 gap-4">

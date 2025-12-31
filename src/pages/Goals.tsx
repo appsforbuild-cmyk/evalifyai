@@ -15,6 +15,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import DashboardLayout from '@/components/DashboardLayout';
 import { goalSchema } from '@/lib/validations';
+import { awardPointsToUser, checkAchievementProgress } from '@/lib/gamification';
+import { useGamificationToasts } from '@/components/gamification/GamificationProvider';
 
 interface Goal {
   id: string;
@@ -32,6 +34,7 @@ interface Goal {
 const Goals = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { showPointsEarned, showAchievement } = useGamificationToasts();
   const [goals, setGoals] = useState<Goal[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -159,6 +162,21 @@ const Goals = () => {
         setDialogOpen(false);
         resetForm();
         fetchGoals();
+        
+        // Award points for creating a goal
+        if (user?.id) {
+          const result = await awardPointsToUser(user.id, 'create_goal');
+          if (result.pointsAwarded) {
+            showPointsEarned(result.pointsAwarded, 'Goal created');
+          }
+          
+          // Check for goal-related achievements
+          const goalsCount = goals.length + 1;
+          const earnedAchievement = await checkAchievementProgress(user.id, 'goal_created', goalsCount);
+          if (earnedAchievement) {
+            showAchievement(earnedAchievement as any);
+          }
+        }
       }
     }
   };
@@ -179,6 +197,7 @@ const Goals = () => {
 
   const updateProgress = async (goalId: string, progress: number) => {
     const newStatus = progress === 100 ? 'completed' : 'active';
+    const wasCompleted = goals.find(g => g.id === goalId)?.status === 'completed';
     
     const { error } = await supabase
       .from('goals')
@@ -189,8 +208,26 @@ const Goals = () => {
       toast.error('Failed to update progress');
     } else {
       fetchGoals();
-      if (progress === 100) {
+      if (progress === 100 && !wasCompleted) {
         toast.success('Goal completed! 🎉');
+        
+        // Award points for completing a goal
+        if (user?.id) {
+          const result = await awardPointsToUser(user.id, 'complete_goal', goalId);
+          if (result.pointsAwarded) {
+            showPointsEarned(result.pointsAwarded, 'Goal completed!');
+          }
+          if (result.leveledUp && result.newLevel) {
+            // Level up handled by provider
+          }
+          
+          // Check for goals completed achievement
+          const completedCount = goals.filter(g => g.status === 'completed').length + 1;
+          const earnedAchievement = await checkAchievementProgress(user.id, 'goals_completed', completedCount);
+          if (earnedAchievement) {
+            showAchievement(earnedAchievement as any);
+          }
+        }
       }
     }
   };
