@@ -11,6 +11,7 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { OrganizationProvider } from "@/contexts/OrganizationContext";
 import { BrandingProvider } from "@/contexts/BrandingContext";
 import { GamificationProvider } from "@/components/gamification/GamificationProvider";
+import { SuperAdminProvider } from "@/contexts/SuperAdminContext";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
@@ -44,6 +45,17 @@ import BrandingPreview from "./pages/BrandingPreview";
 import BrandAssets from "./pages/BrandAssets";
 import BrandedLogin from "./pages/BrandedLogin";
 import NotFound from "./pages/NotFound";
+
+// Super Admin imports
+import SuperAdminLogin from "./pages/superadmin/SuperAdminLogin";
+import SuperAdminDashboard from "./pages/superadmin/SuperAdminDashboard";
+import OrganizationsList from "./pages/superadmin/OrganizationsList";
+import OrganizationDetail from "./pages/superadmin/OrganizationDetail";
+import SuperAdminAnalytics from "./pages/superadmin/SuperAdminAnalytics";
+import AuditLogs from "./pages/superadmin/AuditLogs";
+import SystemConfig from "./pages/superadmin/SystemConfig";
+import SupportPage from "./pages/superadmin/SupportPage";
+import SuperAdminLayout from "./components/superadmin/SuperAdminLayout";
 
 const queryClient = new QueryClient();
 
@@ -115,6 +127,20 @@ const AppRoutes = () => (
     <Route path="/leaderboards" element={<ProtectedRoute><Leaderboards /></ProtectedRoute>} />
     <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
     <Route path="/analytics/scheduled-reports" element={<ProtectedRoute><ScheduledReports /></ProtectedRoute>} />
+    
+    {/* Super Admin Routes */}
+    <Route path="/superadmin/login" element={<SuperAdminLogin />} />
+    <Route path="/superadmin" element={<SuperAdminLayout />}>
+      <Route index element={<SuperAdminDashboard />} />
+      <Route path="dashboard" element={<SuperAdminDashboard />} />
+      <Route path="organizations" element={<OrganizationsList />} />
+      <Route path="organizations/:orgId" element={<OrganizationDetail />} />
+      <Route path="analytics" element={<SuperAdminAnalytics />} />
+      <Route path="audit" element={<AuditLogs />} />
+      <Route path="system" element={<SystemConfig />} />
+      <Route path="support" element={<SupportPage />} />
+    </Route>
+    
     <Route path="*" element={<NotFound />} />
   </Routes>
 );
@@ -125,15 +151,17 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <AuthProvider>
-          <OrganizationProvider>
-            <BrandingProvider>
-              <GamificationProvider>
-                <AppRoutes />
-              </GamificationProvider>
-            </BrandingProvider>
-          </OrganizationProvider>
-        </AuthProvider>
+        <SuperAdminProvider>
+          <AuthProvider>
+            <OrganizationProvider>
+              <BrandingProvider>
+                <GamificationProvider>
+                  <AppRoutes />
+                </GamificationProvider>
+              </BrandingProvider>
+            </OrganizationProvider>
+          </AuthProvider>
+        </SuperAdminProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
