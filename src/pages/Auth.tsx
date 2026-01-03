@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -280,6 +280,15 @@ const Auth = () => {
             >
               {isLogin ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
             </button>
+          </div>
+
+          <div className="text-center pt-4 border-t border-border">
+            <Link 
+              to="/superadmin/login" 
+              className="text-xs text-muted-foreground hover:text-primary transition-colors"
+            >
+              EvalifyAI Team Access
+            </Link>
           </div>
         </CardContent>
       </Card>
