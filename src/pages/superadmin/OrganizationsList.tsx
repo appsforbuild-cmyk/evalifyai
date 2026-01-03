@@ -39,9 +39,11 @@ import {
   Download,
   ChevronLeft,
   ChevronRight,
-  Building2
+  Building2,
+  Plus
 } from 'lucide-react';
 import { format } from 'date-fns';
+import CreateOrganizationModal from '@/components/superadmin/CreateOrganizationModal';
 
 interface Organization {
   id: string;
@@ -78,6 +80,7 @@ export default function OrganizationsList() {
   const [planFilter, setPlanFilter] = useState<string>('all');
   const [page, setPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const pageSize = 20;
 
   useEffect(() => {
@@ -160,15 +163,30 @@ export default function OrganizationsList() {
           <h1 className="text-2xl font-bold text-white">Organizations</h1>
           <p className="text-slate-400">Manage all organizations on the platform</p>
         </div>
-        <Button
-          variant="outline"
-          className="border-slate-600 text-slate-300"
-          onClick={handleExportCSV}
-        >
-          <Download className="h-4 w-4 mr-2" />
-          Export CSV
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            className="border-slate-600 text-slate-300"
+            onClick={handleExportCSV}
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Export CSV
+          </Button>
+          <Button
+            onClick={() => setShowCreateModal(true)}
+            className="bg-amber-500 hover:bg-amber-600 text-black"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            New Organization
+          </Button>
+        </div>
       </div>
+
+      <CreateOrganizationModal
+        open={showCreateModal}
+        onOpenChange={setShowCreateModal}
+        onSuccess={fetchOrganizations}
+      />
 
       {/* Filters */}
       <Card className="bg-slate-800 border-slate-700">
