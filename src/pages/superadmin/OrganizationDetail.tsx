@@ -40,7 +40,8 @@ import {
   Plus,
   ExternalLink,
   Clock,
-  Activity
+  Activity,
+  Palette
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
@@ -53,6 +54,7 @@ import {
   Tooltip,
   ResponsiveContainer
 } from 'recharts';
+import EditBrandingModal from '@/components/superadmin/EditBrandingModal';
 
 interface Organization {
   id: string;
@@ -112,6 +114,7 @@ export default function OrganizationDetail() {
   const [selectedUser, setSelectedUser] = useState<OrganizationUser | null>(null);
   const [newNote, setNewNote] = useState('');
   const [isSavingNote, setIsSavingNote] = useState(false);
+  const [showEditBrandingModal, setShowEditBrandingModal] = useState(false);
   
   // Mock activity data
   const [activityData] = useState(
@@ -654,45 +657,98 @@ export default function OrganizationDetail() {
 
         {/* Settings Tab */}
         <TabsContent value="settings">
-          <Card className="bg-slate-800 border-slate-700">
-            <CardHeader>
-              <CardTitle className="text-white">Settings Override</CardTitle>
-              <CardDescription className="text-slate-400">
-                Override organization settings and limits
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4">
-                <div className="flex items-center justify-between p-4 rounded-lg bg-slate-700/50">
-                  <div>
-                    <p className="text-white font-medium">Max Users</p>
-                    <p className="text-sm text-slate-400">Current limit: {organization.max_users}</p>
+          <div className="space-y-6">
+            {/* Branding Section */}
+            <Card className="bg-slate-800 border-slate-700">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center gap-2">
+                  <Palette className="h-5 w-5 text-amber-500" />
+                  Branding
+                </CardTitle>
+                <CardDescription className="text-slate-400">
+                  Customize the organization's logo, colors, and appearance
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-4">
+                  {organization.logo_url ? (
+                    <img
+                      src={organization.logo_url}
+                      alt={organization.name}
+                      className="w-16 h-16 rounded-lg object-cover border border-slate-600"
+                    />
+                  ) : (
+                    <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-amber-500/20 to-orange-600/20 flex items-center justify-center border border-slate-600">
+                      <Building2 className="h-8 w-8 text-amber-500" />
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <p className="text-white font-medium">{organization.name}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      {organization.primary_color && (
+                        <div 
+                          className="w-6 h-6 rounded border border-slate-600"
+                          style={{ backgroundColor: organization.primary_color }}
+                          title={`Primary: ${organization.primary_color}`}
+                        />
+                      )}
+                      <span className="text-sm text-slate-400">
+                        {organization.primary_color || 'No colors set'}
+                      </span>
+                    </div>
                   </div>
-                  <Button variant="outline" size="sm" className="border-slate-600 text-slate-300">
-                    Change
+                  <Button
+                    onClick={() => setShowEditBrandingModal(true)}
+                    className="bg-amber-500 hover:bg-amber-600 text-black"
+                  >
+                    <Palette className="h-4 w-4 mr-2" />
+                    Edit Branding
                   </Button>
                 </div>
-                <div className="flex items-center justify-between p-4 rounded-lg bg-slate-700/50">
-                  <div>
-                    <p className="text-white font-medium">Max Storage</p>
-                    <p className="text-sm text-slate-400">Current limit: {organization.max_storage_gb} GB</p>
+              </CardContent>
+            </Card>
+
+            {/* Limits Section */}
+            <Card className="bg-slate-800 border-slate-700">
+              <CardHeader>
+                <CardTitle className="text-white">Settings Override</CardTitle>
+                <CardDescription className="text-slate-400">
+                  Override organization settings and limits
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4">
+                  <div className="flex items-center justify-between p-4 rounded-lg bg-slate-700/50">
+                    <div>
+                      <p className="text-white font-medium">Max Users</p>
+                      <p className="text-sm text-slate-400">Current limit: {organization.max_users}</p>
+                    </div>
+                    <Button variant="outline" size="sm" className="border-slate-600 text-slate-300">
+                      Change
+                    </Button>
                   </div>
-                  <Button variant="outline" size="sm" className="border-slate-600 text-slate-300">
-                    Change
-                  </Button>
-                </div>
-                <div className="flex items-center justify-between p-4 rounded-lg bg-slate-700/50">
-                  <div>
-                    <p className="text-white font-medium">Beta Features</p>
-                    <p className="text-sm text-slate-400">Grant access to beta features</p>
+                  <div className="flex items-center justify-between p-4 rounded-lg bg-slate-700/50">
+                    <div>
+                      <p className="text-white font-medium">Max Storage</p>
+                      <p className="text-sm text-slate-400">Current limit: {organization.max_storage_gb} GB</p>
+                    </div>
+                    <Button variant="outline" size="sm" className="border-slate-600 text-slate-300">
+                      Change
+                    </Button>
                   </div>
-                  <Button variant="outline" size="sm" className="border-slate-600 text-slate-300">
-                    Configure
-                  </Button>
+                  <div className="flex items-center justify-between p-4 rounded-lg bg-slate-700/50">
+                    <div>
+                      <p className="text-white font-medium">Beta Features</p>
+                      <p className="text-sm text-slate-400">Grant access to beta features</p>
+                    </div>
+                    <Button variant="outline" size="sm" className="border-slate-600 text-slate-300">
+                      Configure
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
       </Tabs>
 
@@ -724,6 +780,14 @@ export default function OrganizationDetail() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Edit Branding Modal */}
+      <EditBrandingModal
+        open={showEditBrandingModal}
+        onOpenChange={setShowEditBrandingModal}
+        organizationId={orgId || ''}
+        onSuccess={fetchOrganization}
+      />
     </div>
   );
 }

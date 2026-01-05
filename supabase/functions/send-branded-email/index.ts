@@ -84,6 +84,26 @@ const templates: Record<string, (vars: Record<string, string>, primaryColor: str
       Subscribe Now
     </a>
   `,
+  organization_welcome: (vars, primaryColor) => `
+    <h1 style="margin: 0 0 20px; color: #18181b; font-size: 24px;">Welcome to ${vars.platform_name}!</h1>
+    <p style="margin: 0 0 20px; color: #52525b; font-size: 16px; line-height: 1.6;">
+      Hi ${vars.admin_name},<br><br>
+      Your organization <strong>${vars.organization_name}</strong> has been successfully created on ${vars.platform_name}.
+    </p>
+    <p style="margin: 0 0 20px; color: #52525b; font-size: 16px; line-height: 1.6;">
+      Your team can now access the platform using your custom branded login page:
+    </p>
+    <div style="margin: 0 0 20px; padding: 16px; background-color: #f4f4f5; border-radius: 8px;">
+      <p style="margin: 0; font-size: 14px; color: #71717a;">Your Login URL:</p>
+      <a href="${vars.login_url}" style="color: ${primaryColor}; font-weight: 600; word-break: break-all;">${vars.login_url}</a>
+    </div>
+    <a href="${vars.login_url}" style="display: inline-block; padding: 14px 28px; background-color: ${primaryColor}; color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">
+      Access Your Platform
+    </a>
+    <p style="margin: 20px 0 0; color: #71717a; font-size: 14px;">
+      Share this URL with your team members to give them access to the platform.
+    </p>
+  `,
 };
 
 const handler = async (req: Request): Promise<Response> => {
