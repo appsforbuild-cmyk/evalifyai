@@ -208,7 +208,30 @@ export default function CreateOrganizationModal({
         plan: formData.plan,
       });
 
-      toast.success('Organization created successfully!');
+      // Send welcome email to billing email
+      if (formData.billingEmail) {
+        try {
+          await supabase.functions.invoke('send-branded-email', {
+            body: {
+              toEmail: formData.billingEmail,
+              subject: `Welcome to ${formData.platformName || formData.name}!`,
+              templateName: 'organization_welcome',
+              variables: {
+                organization_name: formData.name,
+                login_url: `${window.location.origin}/login/${formData.slug}`,
+                admin_name: 'Admin',
+              },
+              organizationId: org.id,
+            },
+          });
+          toast.success('Organization created and welcome email sent!');
+        } catch (emailError) {
+          console.error('Failed to send welcome email:', emailError);
+          toast.success('Organization created! (Welcome email could not be sent)');
+        }
+      } else {
+        toast.success('Organization created successfully!');
+      }
       
       // Reset form
       setFormData(DEFAULT_FORM_DATA);

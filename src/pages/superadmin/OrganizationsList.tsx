@@ -44,6 +44,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import CreateOrganizationModal from '@/components/superadmin/CreateOrganizationModal';
+import OrganizationOnboardingWizard from '@/components/superadmin/OrganizationOnboardingWizard';
 
 interface Organization {
   id: string;
@@ -81,6 +82,7 @@ export default function OrganizationsList() {
   const [page, setPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showOnboardingWizard, setShowOnboardingWizard] = useState(false);
   const pageSize = 20;
 
   useEffect(() => {
@@ -174,6 +176,14 @@ export default function OrganizationsList() {
           </Button>
           <Button
             onClick={() => setShowCreateModal(true)}
+            variant="outline"
+            className="border-slate-600 text-slate-300"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Quick Create
+          </Button>
+          <Button
+            onClick={() => setShowOnboardingWizard(true)}
             className="bg-amber-500 hover:bg-amber-600 text-black"
           >
             <Plus className="h-4 w-4 mr-2" />
@@ -185,6 +195,12 @@ export default function OrganizationsList() {
       <CreateOrganizationModal
         open={showCreateModal}
         onOpenChange={setShowCreateModal}
+        onSuccess={fetchOrganizations}
+      />
+
+      <OrganizationOnboardingWizard
+        open={showOnboardingWizard}
+        onOpenChange={setShowOnboardingWizard}
         onSuccess={fetchOrganizations}
       />
 
