@@ -42,6 +42,7 @@ const ManagerDashboard = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [newSession, setNewSession] = useState({ title: '', description: '', employeeId: '' });
   const [selectedQuestions, setSelectedQuestions] = useState<TemplateQuestion[]>([]);
+  const [organizationId, setOrganizationId] = useState<string | null>(null);
   const handleQuestionsSelected = useCallback((questions: TemplateQuestion[]) => {
     setSelectedQuestions(questions);
   }, []);
@@ -52,8 +53,20 @@ const ManagerDashboard = () => {
     if (user) {
       fetchSessions();
       fetchEmployees();
+      fetchOrganizationId();
     }
   }, [user]);
+
+  const fetchOrganizationId = async () => {
+    if (!user?.id) return;
+    const { data } = await supabase
+      .from('organization_users')
+      .select('organization_id')
+      .eq('user_id', user.id)
+      .limit(1)
+      .maybeSingle();
+    if (data) setOrganizationId(data.organization_id);
+  };
 
   const fetchSessions = async () => {
     const { data, error } = await supabase
@@ -92,12 +105,14 @@ const ManagerDashboard = () => {
         employee_id: newSession.employeeId,
         title: newSession.title,
         description: newSession.description,
-        status: 'pending'
+        status: 'pending',
+        organization_id: organizationId
       })
       .select()
       .single();
 
     if (error) {
+      console.error('Session creation error:', error);
       toast.error('Failed to create session');
     } else {
       toast.success('Session created!');
