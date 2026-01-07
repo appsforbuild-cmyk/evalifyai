@@ -51,6 +51,16 @@ serve(async (req) => {
 
     console.log(`Creating voice session for manager: ${user.id}`);
 
+    // Fetch user's organization_id
+    const { data: orgUser } = await supabaseAdmin
+      .from('organization_users')
+      .select('organization_id')
+      .eq('user_id', user.id)
+      .limit(1)
+      .maybeSingle();
+
+    console.log(`User organization: ${orgUser?.organization_id}`);
+
     // Create voice session
     const { data: session, error: sessionError } = await supabaseAdmin
       .from('voice_sessions')
@@ -59,7 +69,8 @@ serve(async (req) => {
         description,
         manager_id: user.id,
         employee_id: employeeId,
-        status: 'pending'
+        status: 'pending',
+        organization_id: orgUser?.organization_id || null
       })
       .select()
       .single();
