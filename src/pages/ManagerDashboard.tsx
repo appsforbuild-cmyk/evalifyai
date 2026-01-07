@@ -52,10 +52,16 @@ const ManagerDashboard = () => {
   useEffect(() => {
     if (user) {
       fetchSessions();
-      fetchEmployees();
       fetchOrganizationId();
     }
   }, [user]);
+
+  // Fetch employees only after we have the organization_id
+  useEffect(() => {
+    if (organizationId) {
+      fetchEmployees();
+    }
+  }, [organizationId]);
 
   const fetchOrganizationId = async () => {
     if (!user?.id) return;
@@ -82,13 +88,23 @@ const ManagerDashboard = () => {
   };
 
   const fetchEmployees = async () => {
+    // Fetch from profiles table (real users) not employees_directory
+    // voice_sessions.employee_id expects a user_id from profiles
     const { data, error } = await supabase
-      .from('employees_directory')
-      .select('id, full_name, email, team, org_unit')
+      .from('profiles')
+      .select('user_id, full_name, email, team, org_unit')
+      .eq('organization_id', organizationId)
       .order('full_name');
 
     if (!error && data) {
-      setEmployees(data);
+      // Map user_id to id for compatibility with dropdown
+      setEmployees(data.map(p => ({ 
+        id: p.user_id, 
+        full_name: p.full_name, 
+        email: p.email, 
+        team: p.team, 
+        org_unit: p.org_unit 
+      })));
     }
   };
 
